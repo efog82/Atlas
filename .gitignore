@@ -24,3 +24,6 @@ native/llama-revision.txt
 app/src/main/assets/licenses/llama.cpp.LICENSE.txt
 test-results/
 *.part
+
+model-smoke/
+app/src/main/assets/licenses/llama-dependencies/

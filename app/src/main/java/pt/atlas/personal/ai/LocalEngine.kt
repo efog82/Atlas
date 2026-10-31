@@ -9,10 +9,10 @@ import pt.atlas.personal.security.Preferences
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import org.json.JSONObject
 
-data class Turn(val role: String, val content: String)
 data class EngineStatus(val model: String? = null, val busy: Boolean = false, val stopping: Boolean = false,
-    val loadMs: Long = 0, val metrics: InferenceMetrics = InferenceMetrics())
+    val loadMs: Long = 0, val info: ModelInfo = ModelInfo(), val thinking: Boolean = false, val sampling: SamplingConfig = SamplingConfig(), val metrics: InferenceMetrics = InferenceMetrics())
 
 class LocalEngine {
     private val mutex = Mutex()
@@ -22,10 +22,12 @@ class LocalEngine {
     @Volatile private var activeStop: AtomicBoolean? = null
     private var modelBytes = 0L
     private fun link() { if (!linked) { System.loadLibrary("atlas"); linked = true } }
-    private external fun nativeLoad(path: String)
+    private external fun nativeLoad(path: String, allowChatml: Boolean)
     private external fun nativeUnload()
     private external fun nativeBegin(roles: Array<String>, contents: Array<String>, session: String, context: Int,
-        maxTokens: Int, threads: Int, batchThreads: Int, batch: Int, microbatch: Int)
+        maxTokens: Int, threads: Int, batchThreads: Int, batch: Int, microbatch: Int, thinking: Boolean,
+        temperature: Float, topP: Float, topK: Int, minP: Float, repeatPenalty: Float): Boolean
+    private external fun nativeModelInfo(): String
     private external fun nativeNext(): ByteArray?
     private external fun nativeStop()
     private external fun nativeResetStop()
@@ -45,8 +47,12 @@ class LocalEngine {
             val start = SystemClock.elapsedRealtime()
             mutable.value = EngineStatus(busy = true)
             try {
-                nativeLoad(file.absolutePath); modelBytes = file.length()
-                mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start)
+                nativeLoad(file.absolutePath, preferences.allowChatml); modelBytes = file.length()
+                val meta = JSONObject(nativeModelInfo())
+                val info = ModelInfo(meta.getString("architecture"), meta.getString("name"), meta.getString("template"),
+                    meta.getBoolean("thinkingSwitch"), meta.getBoolean("reasoning"), meta.getBoolean("manualTemplate"), meta.getBoolean("thinkingForced"))
+                mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start, info = info,
+                    sampling = preferences.samplingOverrides[file.name] ?: SamplingConfig.recommended(info, info.effectiveThinking(preferences.thinking)))
             } catch (e: Throwable) { modelBytes = 0; mutable.value = EngineStatus(); throw e }
         }
     }
@@ -80,9 +86,13 @@ class LocalEngine {
             val estimate = modelBytes + prefs.contextTokens * 196_608L + 192L * 1048576
             require(estimate <= prefs.memoryMb * 1048576L) { "O contexto excede o orçamento de memória." }
             val config = InferenceConfig.from(prefs)
+            val history = ChatHistory.prepare(turns, prefs.factual)
+            val info = mutable.value.info
+            val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.recommended(info, info.effectiveThinking(prefs.thinking))
+            sampling.validate()
             val request = AtomicBoolean(false)
             activeStop = request
-            mutable.update { it.copy(busy = true, stopping = false, metrics = InferenceMetrics()) }
+            mutable.update { it.copy(busy = true, stopping = false, sampling = sampling, metrics = InferenceMetrics()) }
             val bytes = ByteArrayOutputStream()
             var lastEmission = 0L
             var lastRefresh = 0L
@@ -93,8 +103,9 @@ class LocalEngine {
                 // A Stop concurrent with reset cannot be lost: recheck the Kotlin request flag.
                 if (request.get()) { nativeStop(); throw CancellationException("Interrompido") }
                 currentCoroutineContext().ensureActive()
-                nativeBegin(turns.map { it.role }.toTypedArray(), turns.map { it.content }.toTypedArray(), session,
-                    prefs.contextTokens, prefs.maxTokens, config.threads, config.batchThreads, config.batch, config.microbatch)
+                val forcedOpen = nativeBegin(history.map { it.role }.toTypedArray(), history.map { it.content }.toTypedArray(), session,
+                    prefs.contextTokens, prefs.maxTokens, config.threads, config.batchThreads, config.batch, config.microbatch,
+                    prefs.thinking, sampling.temperature, sampling.topP, sampling.topK, sampling.minP, sampling.repeatPenalty)
                 refresh()
                 while (currentCoroutineContext().isActive && !request.get()) {
                     val part = nativeNext() ?: break
@@ -102,19 +113,23 @@ class LocalEngine {
                     val now = SystemClock.elapsedRealtime()
                     if (part.isNotEmpty()) bytes.write(part)
                     if (part.isNotEmpty() && (emitted.isEmpty() || now - lastEmission >= 80)) {
-                        emitted = bytes.toString(Charsets.UTF_8.name()); emit(emitted); lastEmission = now
+                        val view = ModelOutput.present(ModelOutput.decodeUtf8(bytes.toByteArray()), info.reasoning, forcedOpen)
+                        mutable.update { it.copy(thinking = view.thinking) }
+                        if (view.text != emitted) { emitted = view.text; emit(emitted) }
+                        lastEmission = now
                     }
                     if (now - lastRefresh >= 100) { refresh(); lastRefresh = now }
                     yield()
                 }
                 if (request.get()) throw CancellationException("Interrompido")
-                val finalText = bytes.toString(Charsets.UTF_8.name())
-                if (finalText != emitted) emit(finalText)
+                val view = ModelOutput.present(ModelOutput.decodeUtf8(bytes.toByteArray(), complete = true), info.reasoning, forcedOpen, complete = true)
+                check(!view.thinking) { "O modelo terminou antes da resposta final. Aumenta o limite de resposta ou desativa o raciocínio, se o modelo permitir." }
+                if (view.text != emitted) emit(view.text)
             } } finally {
                 // No suspension: executes on the IO owner, even when the Job is cancelled.
                 try { nativeEnd(); refresh() } finally {
                     activeStop = null
-                    mutable.update { it.copy(busy = false, stopping = false) }
+                    mutable.update { it.copy(busy = false, stopping = false, thinking = false) }
                 }
             }
         }

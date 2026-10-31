@@ -52,16 +52,10 @@ class LocalRequestRegressionTest {
         assertFalse(output.contains("Não corresponde"))
         assertFalse(output.contains("evento privado"))
     }
-    @Test fun ordinaryKnowledgeQuestionIsIsolatedFromOldActions() {
-        assertTrue(NormalChat.standaloneQuestion("O que era o espiritismo?"))
-        assertFalse(NormalChat.standaloneQuestion("Explica melhor"))
-        assertFalse(NormalChat.standaloneQuestion("Como funciona isso?"))
+    @Test fun knowledgeQuestionCannotCreateRecords() {
         assertNull(LocalRequests.read("O que era o espiritismo?"))
         assertNull(AgentPolicy.writeTool("O que era o espiritismo?"))
         assertTrue(AgentPolicy.allowedTools("O que era o espiritismo?").isEmpty())
-        assertTrue(NormalChat.genericNonAnswer("O que era o espiritismo?", "Como assistente, sou projetado para responder perguntas. Meu propósito principal é ajudar. Sinta-se à vontade para perguntar mais."))
-        assertFalse(NormalChat.genericNonAnswer("O que é espiritismo?", "O espiritismo é uma doutrina que aborda a existência dos espíritos e a reencarnação."))
-        assertTrue(NormalChat.genericNonAnswer("O que posso falar cntg", "Olá! Como posso te ajudar hoje?"))
         assertTrue(LocalRequests.capabilities("O que posso falar cntg?"))
     }
 }

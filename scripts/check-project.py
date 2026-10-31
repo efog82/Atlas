@@ -32,7 +32,7 @@ class ProjectChecks(unittest.TestCase):
         kotlin = (ROOT / "app/src/main/java/pt/atlas/personal/ai/LocalEngine.kt").read_text()
         cpp = (ROOT / "app/src/main/cpp/atlas.cpp").read_text()
         methods = re.findall(r"external fun (native\w+)\(", kotlin)
-        self.assertEqual(9, len(methods))
+        self.assertEqual(10, len(methods))
         for name in methods:
             self.assertIn("Java_pt_atlas_personal_ai_LocalEngine_" + name, cpp)
         self.assertIn("llama_model_load_from_file", cpp)

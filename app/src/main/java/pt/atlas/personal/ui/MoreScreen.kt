@@ -141,6 +141,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         clipboard.setText(androidx.compose.ui.text.AnnotatedString(diagnostic))
                         vm.tell("Diagnóstico copiado. Não contém conversas nem registos pessoais.")
                     }) { Text("Copiar diagnóstico de capturas") } }
+                    item { ModelCompatibilityPanel(vm) }
                     item { Text("Limites de inferência", style = MaterialTheme.typography.titleMedium) }
                     item { PerformancePanel(vm) }
                     item { Text("Contexto: ${prefs.contextTokens} tokens")
@@ -159,7 +160,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { Text("Mantém as notificações autorizadas. Sem permissão de alarmes exatos, o Android gere o horário via WorkManager. Alguns fabricantes também impõem restrições de bateria.", style = MaterialTheme.typography.bodySmall) }
                     item { HorizontalDivider() }
                     item { OutlinedButton(onClick = { wipe = true }, enabled = !chat.generating && operation == null) { Icon(Icons.Default.DeleteForever, null); Text(" Apagar registos e histórico…") } }
-                    item { Text("Atlas Personal 0.2.3 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelo recomendado: Qwen2.5-0.5B-Instruct (Apache 2.0). Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
+                    item { Text("Atlas Personal 0.3.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelo recomendado: Qwen2.5-0.5B-Instruct (Apache 2.0). Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }

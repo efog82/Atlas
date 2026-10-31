@@ -10,6 +10,8 @@
 #include <mutex>
 #include <chrono>
 #include "cache_policy.h"
+#include "chat_runtime.h"
+#include <json.hpp>
 
 // One owner (LocalEngine's mutex). Only nativeStop may run concurrently.
 namespace {
@@ -17,6 +19,7 @@ using Clock = std::chrono::steady_clock;
 llama_model *model = nullptr;
 llama_context *ctx = nullptr;
 llama_sampler *sampler = nullptr;
+std::unique_ptr<atlas::ChatRenderer> renderer;
 const llama_vocab *vocab = nullptr;
 std::once_flag backend_once;
 std::atomic<bool> stopped{false};
@@ -41,7 +44,7 @@ std::string utf8(JNIEnv *env, jstring value) {
     return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(text);
 }
 void fail(JNIEnv *env, const std::string &s) { if (!env->ExceptionCheck()) env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), s.c_str()); }
-void clear_cache() { if (ctx) llama_kv_self_clear(ctx); cached.clear(); }
+void clear_cache() { if (ctx) llama_memory_clear(llama_get_memory(ctx), true); cached.clear(); }
 void free_sampler() { if (sampler) { llama_sampler_free(sampler); sampler = nullptr; } }
 void release_context() { free_sampler(); if (ctx) llama_free(ctx); ctx = nullptr; cached.clear(); session.clear(); shape = {}; }
 void finish_turn(bool cancelled) {
@@ -61,19 +64,6 @@ std::vector<llama_token> tokenize(const std::string &text) {
     n = llama_tokenize(vocab, text.data(), text.size(), tokens.data(), tokens.size(), true, true);
     if (n < 0) throw std::runtime_error("Falha ao tokenizar o contexto.");
     tokens.resize(n); return tokens;
-}
-std::string render(const std::vector<std::string> &roles, const std::vector<std::string> &contents) {
-    std::vector<llama_chat_message> messages;
-    for (size_t i = 0; i < roles.size(); ++i) messages.push_back({roles[i].c_str(), contents[i].c_str()});
-    const char *tmpl = llama_model_chat_template(model, nullptr);
-    std::vector<char> buf(4096);
-    int n = llama_chat_apply_template(tmpl ? tmpl : "chatml", messages.data(), messages.size(), true, buf.data(), buf.size());
-    if (n > static_cast<int>(buf.size())) {
-        buf.resize(n + 1);
-        n = llama_chat_apply_template(tmpl ? tmpl : "chatml", messages.data(), messages.size(), true, buf.data(), buf.size());
-    }
-    if (n < 0) throw std::runtime_error("Template GGUF nao suportado.");
-    return std::string(buf.data(), n);
 }
 // Estimate FP16 KV from GGUF metadata (GQA aware). Graph/allocator overhead is estimated separately.
 int64_t metadata_number(const std::string &key, int64_t fallback) {
@@ -108,28 +98,36 @@ bool decode(llama_token *tokens, int n, bool prefill) {
 }
 }
 
-extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeLoad(JNIEnv *env, jobject, jstring path) {
+extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeLoad(JNIEnv *env, jobject, jstring path, jboolean allow_chatml) {
     try {
-        release_context(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr;
+        release_context(); renderer.reset(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr;
         std::call_once(backend_once, [] { llama_backend_init(); });
         auto params = llama_model_default_params();
         params.n_gpu_layers = 0; params.use_mmap = true; params.use_mlock = false;
         model = llama_model_load_from_file(utf8(env, path).c_str(), params);
         if (!model) throw std::runtime_error("Nao foi possivel carregar o GGUF. Verifica formato e RAM.");
-        vocab = llama_model_get_vocab(model); phase = 0;
-    } catch (const std::exception &e) { fail(env, e.what()); }
+        vocab = llama_model_get_vocab(model); renderer = std::make_unique<atlas::ChatRenderer>(model, allow_chatml); phase = 0;
+    } catch (const std::exception &e) { renderer.reset(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr; fail(env, e.what()); }
 }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeUnload(JNIEnv *, jobject) {
-    release_context(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr; phase = 0; prompt.clear();
+    release_context(); renderer.reset(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr; phase = 0; prompt.clear();
 }
-extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeBegin(JNIEnv *env, jobject,
+extern "C" JNIEXPORT jstring JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeModelInfo(JNIEnv *env, jobject) {
+    if (!model || !renderer) { fail(env, "Modelo indisponivel."); return nullptr; }
+    auto meta = [](const char *key) { char value[1024] = {}; llama_model_meta_val_str(model, key, value, sizeof(value)); return std::string(value); };
+    nlohmann::ordered_json value = {{"architecture", meta("general.architecture")}, {"name", meta("general.name")},
+        {"template", renderer->source}, {"thinkingSwitch", renderer->supports_thinking}, {"reasoning", renderer->reasoning}, {"manualTemplate", renderer->manual}, {"thinkingForced", renderer->render({"user"}, {"test"}, false).thinking_open}};
+    return env->NewStringUTF(value.dump().c_str());
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeBegin(JNIEnv *env, jobject,
         jobjectArray jroles, jobjectArray jcontents, jstring session_id, jint context_tokens, jint max_tokens,
-        jint n_threads, jint n_threads_batch, jint n_batch, jint n_ubatch) {
+        jint n_threads, jint n_threads_batch, jint n_batch, jint n_ubatch, jboolean thinking,
+        jfloat temperature, jfloat top_p, jint top_k, jfloat min_p, jfloat repeat_penalty) {
     start = Clock::now(); generated = evaluated = reused = 0; prefill_ms = decode_ms = total_ms = setup_ms = 0; ttft_ms = stop_ms = -1;
     phase = 1; free_sampler(); prompt.clear();
     try {
         if (!model) throw std::runtime_error("Carrega um modelo GGUF primeiro.");
-        if (stopped.load()) { finish_turn(true); return; }
+        if (stopped.load()) { finish_turn(true); return false; }
         if (context_tokens < 512 || context_tokens > 4096 || max_tokens < 1 || n_threads < 1 || n_threads > 8 ||
             n_threads_batch < 1 || n_threads_batch > 8 || n_batch < 16 || n_batch > 512 || n_ubatch < 8 || n_ubatch > n_batch)
             throw std::runtime_error("Parametros de inferencia invalidos.");
@@ -138,18 +136,20 @@ extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeBe
         const int count = env->GetArrayLength(jroles);
         if (!count || count != env->GetArrayLength(jcontents)) throw std::runtime_error("Conversa invalida.");
         for (int i = 0; i < count; ++i) {
-            if (stopped.load()) { finish_turn(true); return; }
+            if (stopped.load()) { finish_turn(true); return false; }
             auto role = static_cast<jstring>(env->GetObjectArrayElement(jroles, i));
             auto content = static_cast<jstring>(env->GetObjectArrayElement(jcontents, i));
             roles.push_back(utf8(env, role)); contents.push_back(utf8(env, content));
             env->DeleteLocalRef(role); env->DeleteLocalRef(content);
         }
-        prompt = tokenize(render(roles, contents));
+        auto rendered = renderer->render(roles, contents, thinking);
+        prompt = tokenize(rendered.prompt);
         while (prompt.size() + token_limit + 8 > static_cast<size_t>(context_tokens) && roles.size() > 2) {
-            if (stopped.load()) { finish_turn(true); return; }
+            if (stopped.load()) { finish_turn(true); return false; }
             roles.erase(roles.begin() + 1); contents.erase(contents.begin() + 1);
             if (roles.size() > 2 && roles[1] == "assistant") { roles.erase(roles.begin() + 1); contents.erase(contents.begin() + 1); }
-            prompt = tokenize(render(roles, contents));
+            rendered = renderer->render(roles, contents, thinking);
+            prompt = tokenize(rendered.prompt);
         }
         if (prompt.empty() || prompt.size() + token_limit + 8 > static_cast<size_t>(context_tokens))
             throw std::runtime_error("Mensagem demasiado longa para o contexto. Encurta-a ou aumenta o limite.");
@@ -165,21 +165,19 @@ extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeBe
             if (!ctx) throw std::runtime_error("Sem memoria para o contexto.");
             shape = requested; ++context_creations;
         }
-        if (stopped.load()) { finish_turn(true); return; }
+        if (stopped.load()) { finish_turn(true); return false; }
         // Thread-count changes do not require a new context or invalidate KV.
         llama_set_n_threads(ctx, n_threads, n_threads_batch);
         threads = n_threads; batch_threads = n_threads_batch;
         const std::string next_session = utf8(env, session_id);
         size_t prefix = atlas::reusable_prefix(cached, prompt, session == next_session);
-        if (!llama_kv_self_seq_rm(ctx, 0, static_cast<llama_pos>(prefix), -1)) { clear_cache(); prefix = 0; }
+        if (!llama_memory_seq_rm(llama_get_memory(ctx), 0, static_cast<llama_pos>(prefix), -1)) { clear_cache(); prefix = 0; }
         cached.resize(prefix); session = next_session; position = reused = static_cast<int>(prefix);
-        auto sp = llama_sampler_chain_default_params(); sampler = llama_sampler_chain_init(sp);
-        llama_sampler_chain_add(sampler, llama_sampler_init_top_k(40));
-        llama_sampler_chain_add(sampler, llama_sampler_init_top_p(0.9f, 1));
-        llama_sampler_chain_add(sampler, llama_sampler_init_temp(0.65f));
-        llama_sampler_chain_add(sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+        sampler = atlas::make_sampler({temperature, top_p, top_k, min_p, repeat_penalty});
+        for (auto token : prompt) llama_sampler_accept(sampler, token);
         setup_ms = millis(start);
-    } catch (const std::exception &e) { phase = 5; clear_cache(); free_sampler(); total_ms = millis(start); fail(env, e.what()); }
+        return rendered.thinking_open;
+    } catch (const std::exception &e) { phase = 5; clear_cache(); free_sampler(); total_ms = millis(start); fail(env, e.what()); return false; }
 }
 extern "C" JNIEXPORT jbyteArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeNext(JNIEnv *env, jobject) {
     try {
@@ -196,10 +194,11 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_na
         const auto t = Clock::now();
         llama_token token = llama_sampler_sample(sampler, ctx, -1);
         if (stopped.load()) { finish_turn(true); return nullptr; }
+        llama_sampler_accept(sampler, token);
         if (llama_vocab_is_eog(vocab, token)) { finish_turn(false); return nullptr; }
         std::vector<char> piece(256);
-        int n = llama_token_to_piece(vocab, token, piece.data(), piece.size(), 0, false);
-        if (n < 0) { piece.resize(-n); n = llama_token_to_piece(vocab, token, piece.data(), piece.size(), 0, false); }
+        int n = llama_token_to_piece(vocab, token, piece.data(), piece.size(), 0, true);
+        if (n < 0) { piece.resize(-n); n = llama_token_to_piece(vocab, token, piece.data(), piece.size(), 0, true); }
         if (n < 0) throw std::runtime_error("Token invalido.");
         decode_ms += millis(t);
         if (!decode(&token, 1, false)) return nullptr;
@@ -225,7 +224,7 @@ extern "C" JNIEXPORT jdoubleArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_
     const double elapsed = (phase == 1 || phase == 2) ? millis(start) : total_ms;
     const double values[] = {static_cast<double>(phase), static_cast<double>(prompt.size()), static_cast<double>(evaluated),
         static_cast<double>(reused), static_cast<double>(generated), prefill_ms, decode_ms, ttft_ms, elapsed,
-        static_cast<double>(ctx ? llama_kv_self_used_cells(ctx) : 0), estimated_memory(), static_cast<double>(context_creations),
+        static_cast<double>(cached.size()), estimated_memory(), static_cast<double>(context_creations),
         static_cast<double>(shape.context), static_cast<double>(threads), static_cast<double>(batch_threads),
         static_cast<double>(shape.batch), static_cast<double>(shape.microbatch), setup_ms, stop_ms};
     auto out = env->NewDoubleArray(19);

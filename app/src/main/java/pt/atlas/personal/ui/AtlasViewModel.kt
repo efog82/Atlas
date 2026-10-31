@@ -172,7 +172,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
                 val turns = mutableListOf(Turn("system", ToolProtocol.instructions(allowed, clockContext)))
-                turns += if (NormalChat.standaloneQuestion(text)) listOf(historyTurn("user", text)) else ConversationContext.turns(repo.dao.messages(conversationId), request.id)
+                turns += ConversationContext.turns(repo.dao.messages(conversationId), request.id)
                 val routed = ToolProtocol.routeRead(text)
                 if (routed != null) {
                     check(AgentPolicy.permits(routed, text))
@@ -195,7 +195,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     if (partial.isBlank()) { tell("O modelo não gerou texto. Tenta uma mensagem mais curta."); return@launch }
                     val response = AssistantText.clean(partial)
                     partial = ""; mutableChat.value = mutableChat.value.copy(partial = "")
-                    val internal = AgentPolicy.isProtocol(response) || response.isBlank() || NormalChat.genericNonAnswer(text, response)
+                    val internal = AgentPolicy.isProtocol(response) || response.isBlank()
                     val call = if (internal) runCatching { ToolProtocol.parse(response) }.getOrNull() else null
                     if (internal && (call == null || call.tool !in allowed || !AgentPolicy.permits(call, text))) {
                         // Never persist/display an unauthorized envelope or turn it into a proposal.

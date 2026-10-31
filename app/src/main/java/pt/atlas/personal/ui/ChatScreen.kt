@@ -134,7 +134,7 @@ fun ChatScreen(vm: AtlasViewModel) {
             }
             if (chat.generating) item {
                 Card { Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text("Atlas · a gerar localmente", style = MaterialTheme.typography.labelSmall)
+                    Text(if (engine.thinking) "Atlas · a raciocinar; aguarda a resposta final" else "Atlas · a gerar localmente", style = MaterialTheme.typography.labelSmall)
                     if (chat.partial.isNotBlank()) Text(chat.partial) else LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp))
                 } }
             }
