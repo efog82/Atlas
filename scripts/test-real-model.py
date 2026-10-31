@@ -23,7 +23,7 @@ policy = (root / 'app/src/main/java/pt/atlas/personal/ai/ModelCompatibility.kt')
 base = textwrap.dedent(re.search(r'val system = """\n(.*?)\n\s*"""', normal, re.S).group(1)).strip()
 system = '\n\n'.join([base, constant(policy, 'language'), constant(policy, 'factual')])
 (out / 'system.txt').write_text(system)
-models = [('qwen3', 'Qwen/Qwen3-0.6B-GGUF', 'q8_0'), ('gemma3', 'ggml-org/gemma-3-1b-it-GGUF', 'q4_k_m'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', 'q4_k_m')]
+models = [('qwen3', 'Qwen/Qwen3-0.6B-GGUF', 'q8_0', '23749fefcc72300e3a2ad315e1317431b06b590a'), ('gemma3', 'ggml-org/gemma-3-1b-it-GGUF', 'q4_k_m', 'f9c28bcd85737ffc5aef028638d3341d49869c27'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', 'q4_k_m', '9217f5db79a29953eb74d5343926648285ec7e67')]
 identities = []
 # Public official model cards: retain the recommendations/licences alongside test evidence.
 for label, repo in [('qwen3', 'Qwen/Qwen3-0.6B'), ('gemma3', 'google/gemma-3-1b-it'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct')]:
@@ -34,9 +34,10 @@ for label, repo in [('qwen3', 'Qwen/Qwen3-0.6B'), ('gemma3', 'google/gemma-3-1b-
         print('Official guidance:', label, '\n'.join(l for l in card.splitlines() if any(w in l.lower() for w in ('temperature', 'top_p', 'top_k', 'min_p', 'repetition_penalty', 'greedy'))), flush=True)
     except Exception as error:
         print('Official model card unavailable:', label, str(error), flush=True)
-for label, repo, quantization in models:
-    with get('https://huggingface.co/api/models/' + repo + '?blobs=true') as response:
+for label, repo, quantization, pinned_revision in models:
+    with get('https://huggingface.co/api/models/' + repo + '/revision/' + pinned_revision + '?blobs=true') as response:
         meta = json.load(response)
+    assert meta['sha'] == pinned_revision, 'Unexpected model revision'
     candidates = [f for f in meta['siblings'] if f['rfilename'].lower().endswith('.gguf') and quantization in f['rfilename'].lower() and 'mmproj' not in f['rfilename'].lower()]
     print('GGUF candidates:', repo, quantization, [f['rfilename'] for f in candidates], flush=True)
     assert candidates, f'No {quantization} text GGUF in {repo}; files: {[f["rfilename"] for f in meta["siblings"]]}'

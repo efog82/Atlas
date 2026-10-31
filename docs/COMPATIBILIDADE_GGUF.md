@@ -53,6 +53,32 @@ Modelos pequenos podem continuar a aceitar premissas falsas ou inventar detalhes
 
 Os ensaios de CPU Linux não medem rapidez, RAM, energia, estabilidade do driver ou execução JNI no Redmi. Os testes instrumentados Android precisam de dispositivo ARM64 e de GGUF instalado. Os resultados efetivos e o APK são registados em [VALIDACAO.md](VALIDACAO.md).
 
+## Resultados reais e limites factuais
+
+Na execução [41236824968](https://github.com/efog82/Atlas/actions/runs/41236824968), o build Android e a integração CPU passaram. [Respostas, prompts, hashes e relatórios](https://github.com/efog82/Atlas/actions/runs/41236824968/artifacts/13056181350).
+
+Foram feitas dez gerações reais: quatro Qwen3 (três non-thinking e uma thinking), três Gemma 3 e três Qwen2.5. O módulo JVM isolado executou sete testes de protocolo e um teste de integração que percorre todas as dez saídas. Não houve BOS duplicado nem fuga dos delimitadores testados; a resposta thinking foi apresentada como `19.` sem o bloco de raciocínio.
+
+A verificação de idioma classificou em português as nove respostas extensas. A resposta numérica `19.` ficou explicitamente como curta/não verificável; a classificação automática `en` não permite inferir o idioma de um número. Não se contam números como prova de português correto.
+
+**Revisão factual manual:**
+
+- **Gemma 3 1B Q4_K_M:** corrigiu a premissa «Lisboa é a capital de Espanha», indicando Madrid e distinguindo Portugal/Espanha; explicou fotossíntese com água, dióxido de carbono, glicose, oxigénio e cloroplastos. Isto é evidência favorável nestes exemplos, não uma validação geral dos seus conhecimentos.
+- **Qwen3 0.6B Q8_0:** rejeitou Lisboa, mas indicou erradamente **Brasília** como capital de Espanha. A explicação de fotossíntese também continha imprecisões. O suporte de template/thinking corrigido não resolve a limitação factual observada.
+- **Qwen2.5 0.5B Q4_K_M:** aceitou a premissa falsa e confundiu fotossíntese com ADN/RNA. Não é recomendado como fonte de informação factual fiável.
+
+A seleção anterior de um modelo pequeno não deve ser confundida com recomendação de qualidade. A página Modelos passa a apresentar as três opções, tamanhos reais dos pesos, licenças e os limites observados. Os links Qwen3/Gemma apontam para as revisões efetivamente ensaiadas. Nenhum modelo instalado é mudado automaticamente.
+
+Identidades verificadas contra SHA-256 LFS:
+
+| Modelo | Revisão | Bytes dos pesos | SHA-256 |
+| --- | --- | --- | --- |
+| Qwen3 0.6B Q8_0 | `23749fefcc72300e3a2ad315e1317431b06b590a` | 639446688 | `9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031` |
+| Gemma 3 1B Q4_K_M | `f9c28bcd85737ffc5aef028638d3341d49869c27` | 806058240 | `8ccc5cd1f1b3602548715ae25a66ed73fd5dc68a210412eea643eb20eb75a135` |
+| Qwen2.5 0.5B Q4_K_M | `9217f5db79a29953eb74d5343926648285ec7e67` | 491400032 | `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db` |
+
+Não há medições físicas no Redmi. O tempo até ao primeiro token nas métricas inclui tokens de raciocínio e não representa necessariamente o tempo até à primeira resposta visível. Estes ensaios cobrem estas versões de texto, não todos os derivados Qwen3/Gemma, arquiteturas posteriores, modelos de visão ou quantizações que não foram carregadas.
+
 ## Fontes consultadas
 
 - [llama.cpp b6500 — chat.h](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.h), [chat.cpp](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.cpp), [minja](https://github.com/ggml-org/llama.cpp/blob/b6500/vendor/minja/chat-template.hpp) e [llama.h](https://github.com/ggml-org/llama.cpp/blob/b6500/include/llama.h).

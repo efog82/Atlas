@@ -88,10 +88,16 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { SectionTitle("IA no teu dispositivo", "Instala uma vez. Usa offline.") }
                     item { Card { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("1 · Obter um modelo GGUF", style = MaterialTheme.typography.titleMedium)
-                        Text(ModelStore.RECOMMENDED)
-                        Text("Recomendado: modelo multilingue pequeno, licença Apache 2.0. Escolhe o ficheiro qwen2.5-0.5b-instruct-q4_k_m.gguf na página oficial. Se estiver dividido em partes, usa outro GGUF único ou junta-o no computador com llama-gguf-split.")
-                        Text("Reserva aproximadamente 1–1,5 GB de RAM livre para modelo e contexto pequeno. Estimativa, ainda não medida em dispositivo. Podes transferir o GGUF por USB.", style = MaterialTheme.typography.bodySmall)
-                        TextButton(onClick = { open(ModelStore.MODEL_PAGE) }) { Text("Abrir página oficial no navegador") }
+                        Text("Gemma 3 1B IT · Q4_K_M", style = MaterialTheme.typography.titleSmall)
+                        Text("806 MB de pesos, mais RAM para contexto e cálculo. Deu respostas melhores nos exemplos ensaiados; pode continuar a errar. Consulta os termos Gemma antes de obter o modelo.", style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { open(ModelStore.GEMMA_PAGE) }) { Text("Gemma 3 · conversão GGUF ensaiada") }
+                        Text("Qwen3 0.6B · Q8_0", style = MaterialTheme.typography.titleSmall)
+                        Text("639 MB de pesos. Suporta thinking/non-thinking. Os testes de formato passaram, mas houve erros factuais. Licença Apache 2.0.", style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { open(ModelStore.QWEN3_PAGE) }) { Text("Qwen3 · GGUF oficial ensaiado") }
+                        Text("Opção mais pequena: ${ModelStore.LIGHT_MODEL}")
+                        Text("491 MB de pesos; qualidade factual limitada nos ensaios. Licença Apache 2.0.", style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { open(ModelStore.MODEL_PAGE) }) { Text("Qwen2.5 · página oficial") }
+                        Text("Estes tamanhos não são RAM medida no telemóvel. Todos os modelos precisam de memória adicional. Escolhe um GGUF único de conversa/Instruct com chat template; partes separadas devem ser juntas no computador. Podes transferi-lo por USB.", style = MaterialTheme.typography.bodySmall)
                         Text("2 · Importar e carregar", style = MaterialTheme.typography.titleMedium)
                         Button(onClick = { importModel.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar GGUF") }
                         Text("Só são aceites GGUF v2/v3. A compatibilidade final é verificada pelo motor llama.cpp ao carregar. O APK não contém pesos.")
@@ -160,7 +166,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { Text("Mantém as notificações autorizadas. Sem permissão de alarmes exatos, o Android gere o horário via WorkManager. Alguns fabricantes também impõem restrições de bateria.", style = MaterialTheme.typography.bodySmall) }
                     item { HorizontalDivider() }
                     item { OutlinedButton(onClick = { wipe = true }, enabled = !chat.generating && operation == null) { Icon(Icons.Default.DeleteForever, null); Text(" Apagar registos e histórico…") } }
-                    item { Text("Atlas Personal 0.3.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelo recomendado: Qwen2.5-0.5B-Instruct (Apache 2.0). Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
+                    item { Text("Atlas Personal 0.3.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelos GGUF: Qwen3, Gemma 3 e outros com template compatível. Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }

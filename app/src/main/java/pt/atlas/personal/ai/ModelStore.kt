@@ -56,8 +56,10 @@ class ModelStore(private val context: Context) {
         File(directory, file.name + ".sha256").delete()
     }
     companion object {
-        const val RECOMMENDED = "Qwen2.5-0.5B-Instruct • Q4_K_M"
+        const val LIGHT_MODEL = "Qwen2.5-0.5B-Instruct • Q4_K_M"
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+        const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"
+        const val QWEN3_PAGE = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/tree/23749fefcc72300e3a2ad315e1317431b06b590a"
         fun validateGguf(file: File) {
             require(file.length() >= 24) { "Ficheiro GGUF incompleto." }
             RandomAccessFile(file, "r").use { input ->
