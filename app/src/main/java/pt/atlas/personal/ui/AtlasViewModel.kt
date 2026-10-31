@@ -138,7 +138,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
     fun searchPublic(topic: String) {
         val query = PublicQuery.fromPublicTopic(topic)
         if (query == null) { tell("Usa um tema público curto, sem dados pessoais, contactos ou excertos do diário."); return }
-        sendInternal("Pesquisa pública: ${query.text}", query)
+        sendInternal("Pesquisa pública: ${topic.trim()}", query)
     }
     private fun sendInternal(text: String, publicQuery: PublicQuery?) {
         if (text.isBlank() || mutableChat.value.generating) return
@@ -178,10 +178,10 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     prepareProposal(conversationId, request.id, direct)
                     return@launch
                 }
-                val groundingEnabled = allowed.none { it in ToolProtocol.writes } && (KnowledgeIntent.factual(text) || KnowledgeIntent.personal(text) || KnowledgeIntent.followUp(text) || publicQuery != null)
+                val groundingEnabled = allowed.none { it in ToolProtocol.writes } && (KnowledgeIntent.factual(text) || KnowledgeIntent.clock(text) || KnowledgeIntent.personal(text) || KnowledgeIntent.followUp(text) || publicQuery != null)
                 var evidence = emptyList<Evidence>()
                 if (groundingEnabled) {
-                    if (KnowledgeIntent.liveData(publicQuery?.text ?: text)) {
+                    if (KnowledgeIntent.liveData(text)) {
                         repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "A fonte online atual é enciclopédica. Não tenho um serviço de meteorologia, notícias ou cotações em tempo real para confirmar esse pedido. Não vou apresentar um artigo geral como informação atual."))
                         return@launch
                     }

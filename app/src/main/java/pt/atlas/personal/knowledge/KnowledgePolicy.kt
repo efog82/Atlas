@@ -14,8 +14,9 @@ object KnowledgeWords {
 }
 
 object KnowledgeIntent {
+    fun clock(text: String) = Regex("^(?:que horas sao|que horas e|qual e a hora(?: atual)?|qual (?:e )?a data(?: de hoje| atual)?|que dia e hoje|em que dia estamos)[?.! ]*$").matches(KnowledgeWords.fold(text).trim())
     fun liveData(text: String): Boolean {
-        val value = KnowledgeWords.fold(text)
+        val value = KnowledgeWords.fold(text).trim().removePrefix("pesquisa publica: ")
         if (personal(text)) return false
         return Regex("\\b(?:noticias|noticia)\\b").containsMatchIn(value) ||
             Regex("^quanto (?:custa|vale)\\b").containsMatchIn(value) ||

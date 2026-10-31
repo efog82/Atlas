@@ -4,6 +4,7 @@ O Atlas procura informação antes de pedir uma explicação ao modelo. Com liga
 
 ## O que funciona
 
+- Data/hora atuais usam o relógio local do dispositivo como fonte identificada, sem pesquisa online. A hora depende da configuração do telemóvel.
 - Consulta automática de excertos relevantes dos TXT/PDF importados e dos apontamentos.
 - Para pedidos pessoais, consulta local de diário, memórias explicitamente autorizadas, tarefas e agenda. O planeamento pode incluir a agenda do dia pedido e preferências guardadas. Isto não cria memórias nem altera registos.
 - Pesquisa enciclopédica online para perguntas gerais claras, com cache dos excertos, título, URL da revisão, data da revisão, data de obtenção e hash do conteúdo.
