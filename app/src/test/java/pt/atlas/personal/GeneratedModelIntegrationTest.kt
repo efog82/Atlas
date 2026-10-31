@@ -5,6 +5,7 @@ import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import pt.atlas.personal.ai.*
+import pt.atlas.personal.knowledge.*
 import java.io.File
 
 /** Uses actual raw GGUF output from the shared C++ renderer/sampler, never fabricated fixtures. */
@@ -54,6 +55,11 @@ class GeneratedModelIntegrationTest {
                     assertTrue(prompt.endsWith("<start_of_turn>model\n"))
                     assertFalse(prompt.contains("<|im_start|>"))
                     assertFalse(prompt.contains("<start_of_turn>system"))
+                }
+                if (row.optString("fixtureExpected").isNotBlank()) {
+                    val fixture = listOf(Evidence("test-fixture", "Documento fictício", "Cenário inventado apenas para ensaio.", "secção 1", true))
+                    row.put("fixtureFactUsed", view.text.contains(row.getString("fixtureExpected"), true))
+                    row.put("citationWarning", Grounding.citationWarning(view.text, fixture) ?: org.json.JSONObject.NULL)
                 }
                 presented.put(row.put("model", file.name.removeSuffix("-raw.json")).put("final", view.text))
             }

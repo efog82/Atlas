@@ -14,17 +14,19 @@ import pt.atlas.personal.security.Preferences
 
 @RunWith(AndroidJUnit4::class)
 class LocalInferenceTest {
-    @Test fun appHasNoInternetPermission() {
+    @Test fun appDeclaresOptionalNetworkPermission() {
         val app = ApplicationProvider.getApplicationContext<AtlasApp>()
-        assertEquals(PackageManager.PERMISSION_DENIED, app.packageManager.checkPermission("android.permission.INTERNET", app.packageName))
+        assertEquals(PackageManager.PERMISSION_GRANTED, app.packageManager.checkPermission("android.permission.INTERNET", app.packageName))
     }
-    @Test fun installedGgufProducesRealTextWithoutNetworkPermission() = runBlocking {
+    @Test fun installedGgufProducesRealTextWithOnlineDisabled() = runBlocking {
         val app = ApplicationProvider.getApplicationContext<AtlasApp>()
         val model = ModelStore(app).list().firstOrNull()
         Assume.assumeTrue("Importa um GGUF no dispositivo antes deste teste.", model != null)
         val memory = ActivityManager.MemoryInfo()
         app.getSystemService(ActivityManager::class.java).getMemoryInfo(memory)
         val prefs = Preferences(contextTokens = 1024, maxTokens = 64, memoryMb = 2048)
+        val originalSettings = app.settings.state.value
+        app.settings.update(originalSettings.copy(onlineEnabled = false))
         try {
             app.engine.load(model!!.file, prefs, memory.availMem)
             val output = withTimeout(180000) {
@@ -32,6 +34,6 @@ class LocalInferenceTest {
             }
             assertTrue("O motor deve emitir texto real.", output.lastOrNull()?.isNotBlank() == true)
             assertTrue(output.zipWithNext().all { (a, b) -> b.startsWith(a.dropLast(1)) })
-        } finally { app.engine.stop(); app.engine.unload() }
+        } finally { app.engine.stop(); app.engine.unload(); app.settings.update(originalSettings) }
     }
 }

@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
             const int expected_accepted = tokens.size() + generated + (eog ? 1 : 0);
             const int accepted = llama_perf_sampler(sampler.get()).n_sample;
             if (accepted != expected_accepted) throw std::runtime_error("Sampler accepted a token more than once");
-            results.push_back({{"id", request.at("id")}, {"prompt", rendered.prompt}, {"raw", raw}, {"forcedOpen", rendered.thinking_open},
+            results.push_back({{"id", request.at("id")}, {"fixtureExpected", request.value("fixtureExpected", "")}, {"prompt", rendered.prompt}, {"raw", raw}, {"forcedOpen", rendered.thinking_open},
                 {"reasoning", renderer.reasoning}, {"thinkingSwitch", renderer.supports_thinking}, {"thinking", request.at("thinking")},
                 {"tokens", generated}, {"samplerAccepted", accepted}, {"expectedAccepted", expected_accepted}, {"eog", eog}, {"doubleBos", double_bos}, {"sampling", c}, {"architecture", [&] { char value[128] = {}; llama_model_meta_val_str(model.get(), "general.architecture", value, sizeof(value)); return std::string(value); }()},
                 {"name", [&] { char value[512] = {}; llama_model_meta_val_str(model.get(), "general.name", value, sizeof(value)); return std::string(value); }()}});

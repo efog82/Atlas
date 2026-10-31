@@ -13,6 +13,7 @@ import pt.atlas.personal.AtlasApp
 import pt.atlas.personal.ai.*
 import pt.atlas.personal.agent.*
 import pt.atlas.personal.data.*
+import pt.atlas.personal.knowledge.*
 import pt.atlas.personal.security.BackupService
 import pt.atlas.personal.study.DocumentImporter
 import java.io.File
@@ -133,7 +134,13 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun send(text: String) {
+    fun send(text: String) { sendInternal(text, null) }
+    fun searchPublic(topic: String) {
+        val query = PublicQuery.fromPublicTopic(topic)
+        if (query == null) { tell("Usa um tema público curto, sem dados pessoais, contactos ou excertos do diário."); return }
+        sendInternal("Pesquisa pública: ${query.text}", query)
+    }
+    private fun sendInternal(text: String, publicQuery: PublicQuery?) {
         if (text.isBlank() || mutableChat.value.generating) return
         if (mutableOperation.value != null) { tell("Espera pela operação atual."); return }
         if (mutableChat.value.proposal != null) { tell("Confirma ou cancela a proposta anterior."); return }
@@ -171,9 +178,47 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     prepareProposal(conversationId, request.id, direct)
                     return@launch
                 }
+                val groundingEnabled = allowed.none { it in ToolProtocol.writes } && (KnowledgeIntent.factual(text) || KnowledgeIntent.followUp(text) || publicQuery != null)
+                var evidence = emptyList<Evidence>()
+                if (groundingEnabled) {
+                    mutableChat.value = mutableChat.value.copy(partial = "A procurar fontes locais…")
+                    val lookup = if (publicQuery != null) {
+                        val saved = app.knowledge.local(publicQuery.text)
+                        if (saved.isNotEmpty() || !settings.value.onlineEnabled || !app.hasInternet()) KnowledgeLookup(saved)
+                        else try {
+                            val pages = app.wiki.search(publicQuery)
+                            pages.forEach { app.knowledge.cache(it) }
+                            KnowledgeLookup(app.knowledge.local(publicQuery.text), networkUsed = true)
+                        } catch (cancel: CancellationException) { throw cancel }
+                        catch (_: Exception) { KnowledgeLookup(app.knowledge.local(publicQuery.text), "A pesquisa online falhou; foram mantidas as fontes locais.") }
+                    } else if (KnowledgeIntent.followUp(text)) {
+                        val previous = repo.dao.messages(conversationId).asReversed().firstNotNullOfOrNull { msg -> Grounding.parseReceipt(msg.content)?.map { it.second } }
+                        KnowledgeLookup(previous.orEmpty().filter { settings.value.autoPersonal || !it.private })
+                    } else app.knowledge.lookup(text, app.hasInternet())
+                    val count = if (settings.value.contextTokens >= 2048) 4 else 2
+                    val quoteLimit = if (settings.value.contextTokens >= 2048) 600 else 240
+                    evidence = lookup.sources.take(count).map { it.copy(quote = it.quote.take(quoteLimit)) }
+                    lookup.notice?.let { repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = it)) }
+                    if (evidence.isNotEmpty()) repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = Grounding.receipt(evidence)))
+                    if (evidence.isEmpty() && settings.value.requireSources) {
+                        repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "Não encontrei fontes suficientes para responder com segurança. Importa documentos na Biblioteca ou pesquisa um tema público quando houver Internet. Os registos pessoais não foram incluídos na pesquisa."))
+                        return@launch
+                    }
+                    if (evidence.isNotEmpty() && (app.engine.status.value.model == null || settings.value.contextTokens < 1024)) {
+                        repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "Os excertos das fontes estão disponíveis acima. Para uma explicação gerada localmente, carrega um GGUF e usa pelo menos 1024 tokens de contexto."))
+                        return@launch
+                    }
+                    mutableChat.value = mutableChat.value.copy(partial = "")
+                }
                 val turns = mutableListOf(Turn("system", ToolProtocol.instructions(allowed, clockContext)))
-                turns += ConversationContext.turns(repo.dao.messages(conversationId), request.id)
-                val routed = ToolProtocol.routeRead(text)
+                if (evidence.isNotEmpty()) {
+                    allowed = emptySet()
+                    // Old hallucinations/citation IDs are not evidence for a new factual request.
+                    turns[0] = Turn("system", ToolProtocol.instructions(clockContext = clockContext) + "\n" + Grounding.instructions(evidence))
+                    val previousQuestion = if (KnowledgeIntent.followUp(text)) repo.dao.messages(conversationId).lastOrNull { it.role == "user" && it.id != request.id }?.content else null
+                    turns += Turn("user", if (previousQuestion == null) text else "Pergunta anterior: $previousQuestion\nPedido atual: $text")
+                } else turns += ConversationContext.turns(repo.dao.messages(conversationId), request.id)
+                val routed = if (evidence.isEmpty()) ToolProtocol.routeRead(text) else null
                 if (routed != null) {
                     check(AgentPolicy.permits(routed, text))
                     val result = tools.read(routed)
@@ -183,6 +228,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     allowed = emptySet()
                     turns[0] = Turn("system", ToolProtocol.instructions(clockContext = clockContext))
                 }
+                val groundedSystem = ToolProtocol.instructions(clockContext = clockContext) + if (evidence.isNotEmpty()) "\n" + Grounding.instructions(evidence) else ""
                 var repaired = false
                 repeat(4) {
                     currentCoroutineContext().ensureActive()
@@ -205,12 +251,15 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                             return@launch
                         }
                         repaired = true; allowed = emptySet()
-                        turns[0] = Turn("system", ToolProtocol.instructions(clockContext = clockContext))
+                        turns[0] = Turn("system", groundedSystem)
                         turns += historyTurn("user", "Dá uma resposta concreta ao assunto desta pergunta, sem saudações nem descrever a tua função: $text")
                         return@repeat
                     }
                     if (call == null) {
                         repo.dao.saveMessage(Message(conversationId = conversationId, role = "assistant", content = response))
+                        if (evidence.isNotEmpty()) Grounding.citationWarning(response, evidence)?.let {
+                            repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = it))
+                        }
                         return@launch
                     }
                     if (call.tool in ToolProtocol.writes) {
@@ -240,6 +289,17 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun stop() { app.engine.stop(); chatJob?.cancel(); benchmarkJob?.cancel() }
 
+    fun updateKnowledgeOptions(online: Boolean? = null, personal: Boolean? = null, strict: Boolean? = null, refresh: Boolean? = null) {
+        val prefs = settings.value
+        app.settings.update(prefs.copy(onlineEnabled = online ?: prefs.onlineEnabled, autoPersonal = personal ?: prefs.autoPersonal,
+            requireSources = strict ?: prefs.requireSources, refreshKnowledge = refresh ?: prefs.refreshKnowledge))
+        KnowledgeRefreshWorker.schedule(app)
+    }
+    fun refreshKnowledge() = operation("A atualizar fontes públicas…") {
+        check(settings.value.onlineEnabled && app.hasInternet()) { "Ativa a pesquisa online e liga a Internet para atualizar. A biblioteca local mantém-se disponível." }
+        val count = app.knowledge.refreshSaved()
+        tell("$count fontes públicas atualizadas. Os teus registos pessoais não foram enviados.")
+    }
     fun importModel(uri: Uri) = operation("A importar modelo…") {
         store.import(uri) { bytes -> mutableOperation.value = "A importar modelo: ${bytes / 1048576} MB" }
         mutableModels.value = withContext(Dispatchers.IO) { store.list() }

@@ -28,6 +28,9 @@ class BackupRestoreTest {
     @Test fun authenticatedBackupRestoresAllRecordsAndRejectsWrongPasswordWithoutChanges() = runBlocking {
         val original = Record(kind = Kind.MEMORY, title = "Objetivo", body = "Estudar português")
         database.dao().save(original)
+        val publicSource = Record(kind = Kind.SOURCE, title = "Fonte pública", body = "Metadados de origem preservados")
+        val publicSection = Section(documentId = publicSource.id, page = 1, text = "Excerto literal da fonte")
+        database.dao().save(publicSource); database.dao().saveSections(listOf(publicSection))
         backup.export(Uri.fromFile(file), "uma palavra-passe forte".toCharArray())
         val changed = original.copy(body = "Alterado")
         database.dao().save(changed)
@@ -38,5 +41,6 @@ class BackupRestoreTest {
         assertEquals(changed, database.dao().record(original.id))
         backup.restore(Uri.fromFile(file), "uma palavra-passe forte".toCharArray())
         assertEquals(original, database.dao().record(original.id))
+        assertEquals(publicSection, database.dao().sections(publicSource.id).single())
     }
 }

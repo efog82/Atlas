@@ -67,7 +67,7 @@ class BackupService(private val app: AtlasApp, private val database: AtlasDataba
                 r.nullLong("due"), r.nullLong("end"), r.getString("recurrence"), r.getBoolean("done"), r.getBoolean("reminder"), r.getInt("progress"))
                 .also(RecordRules::validate) }
             require(records.map { it.id }.toSet().size == records.size)
-            val docs = records.filter { it.kind == Kind.DOCUMENT }.map { it.id }.toSet()
+            val docs = records.filter { it.kind in setOf(Kind.DOCUMENT, Kind.SOURCE) }.map { it.id }.toSet()
             val sections = objects("sections").map { s -> Section(s.id("id"), s.id("document"), s.getInt("page"), s.getString("text"))
                 .also { require(it.documentId in docs && it.page in 1..10000 && it.text.length <= 500_000) } }
             require(sections.map { it.id }.toSet().size == sections.size)

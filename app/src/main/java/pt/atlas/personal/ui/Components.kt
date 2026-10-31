@@ -27,6 +27,7 @@ import java.time.format.ResolverStyle
 val localDateTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm").withResolverStyle(ResolverStyle.STRICT)
 fun formatDate(time: Long?): String = time?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(localDateTimeFormat) } ?: "Sem data"
 fun kindLabel(kind: String): String = when (kind) {
+    Kind.SOURCE -> "Fonte de conhecimento"
     Kind.TASK -> "Tarefa"; Kind.EVENT -> "Evento"; Kind.JOURNAL -> "Diário"; Kind.NOTE -> "Apontamento"
     Kind.MEMORY -> "Memória"; Kind.HABIT -> "Hábito"; else -> "Documento"
 }

@@ -27,3 +27,5 @@ test-results/
 
 model-smoke/
 app/src/main/assets/licenses/llama-dependencies/
+
+knowledge-smoke/

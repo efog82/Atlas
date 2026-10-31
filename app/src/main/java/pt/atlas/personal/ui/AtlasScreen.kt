@@ -59,7 +59,7 @@ fun AtlasScreen(vm: AtlasViewModel, onLock: (Boolean) -> Unit) {
                     2 -> AgendaScreen(records, { kind, date -> add(kind, date) }, { viewing = it }, ::edit, { deleting = it }, vm::complete)
                     3 -> JournalScreen(records, { add(Kind.JOURNAL) }, { viewing = it }, ::edit, { deleting = it })
                     4 -> StudyScreen(vm, records, { add(Kind.NOTE) }, { viewing = it }, ::edit, { deleting = it }, { tab = 1 })
-                    5 -> MoreScreen(vm, records, onLock, { add(it) }, { viewing = it }, ::edit, { deleting = it })
+                    5 -> MoreScreen(vm, records, onLock, { add(it) }, { viewing = it }, ::edit, { deleting = it }, { tab = 1 })
                 }
             }
         }

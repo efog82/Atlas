@@ -27,7 +27,7 @@ import java.time.LocalDate
 
 @Composable
 fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> Unit, onAdd: (String) -> Unit,
-    onOpen: (Record) -> Unit, onEdit: (Record) -> Unit, onDelete: (Record) -> Unit) {
+    onOpen: (Record) -> Unit, onEdit: (Record) -> Unit, onDelete: (Record) -> Unit, onChat: () -> Unit) {
     var page by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -56,7 +56,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
         try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
         catch (_: Exception) { vm.tell("Nenhuma aplicação disponível para abrir esta ligação.") }
     }
-    val names = listOf("Hábitos", "Memória", "Modelos", "Cópias", "Definições")
+    val names = listOf("Hábitos", "Memória", "Modelos", "Cópias", "Definições", "Conhecimento")
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             names.forEachIndexed { i, title -> FilterChip(page == i, { page = i }, label = { Text(title) }) }
@@ -102,7 +102,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         Button(onClick = { importModel.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar GGUF") }
                         Text("Só são aceites GGUF v2/v3. A compatibilidade final é verificada pelo motor llama.cpp ao carregar. O APK não contém pesos.")
                         Text("3 · Ativar modo de avião e conversar", style = MaterialTheme.typography.titleMedium)
-                        Text("A app não tem permissão de Internet. O navegador é usado apenas para obter o modelo. Conversas e documentos permanecem no armazenamento privado Android.")
+                        Text("A inferência é local. A consulta opcional à Wikipédia envia apenas um tema público; os teus registos pessoais não são incluídos. Sem Internet, o Atlas usa as fontes guardadas.")
                     } } }
                     if (models.isEmpty()) item { EmptyCard("Nenhum modelo instalado", "Importa um GGUF e toca em Carregar. Não são usadas respostas simuladas.") }
                     items(models, key = { it.file.name }) { model -> OutlinedCard {
@@ -125,6 +125,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { OutlinedButton(onClick = { importBackup.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar e substituir dados…") } }
                     item { Text("AES-256-GCM · PBKDF2-HMAC-SHA256 · 210 000 iterações. Uma palavra-passe errada ou conteúdo alterado impede a restauração. O seletor Android pode incluir destinos na nuvem: só o ficheiro já encriptado é escrito no destino.", style = MaterialTheme.typography.bodySmall) }
                 }
+                5 -> { item { KnowledgePanel(vm, records, onDelete, onChat) } }
                 else -> {
                     item { SectionTitle("Definições", "Privacidade e recursos sob o teu controlo.") }
                     item { Text("Aparência", style = MaterialTheme.typography.titleMedium) }
@@ -166,7 +167,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { Text("Mantém as notificações autorizadas. Sem permissão de alarmes exatos, o Android gere o horário via WorkManager. Alguns fabricantes também impõem restrições de bateria.", style = MaterialTheme.typography.bodySmall) }
                     item { HorizontalDivider() }
                     item { OutlinedButton(onClick = { wipe = true }, enabled = !chat.generating && operation == null) { Icon(Icons.Default.DeleteForever, null); Text(" Apagar registos e histórico…") } }
-                    item { Text("Atlas Personal 0.3.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelos GGUF: Qwen3, Gemma 3 e outros com template compatível. Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
+                    item { Text("Atlas Personal 0.4.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelos GGUF: Qwen3, Gemma 3 e outros com template compatível. Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }

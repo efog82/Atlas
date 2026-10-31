@@ -17,6 +17,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pt.atlas.personal.data.Conversation
+import pt.atlas.personal.knowledge.Grounding
 import pt.atlas.personal.agent.ToolProtocol
 import pt.atlas.personal.agent.ActionReceipt
 import pt.atlas.personal.agent.ConversationContext
@@ -75,6 +76,8 @@ fun ChatScreen(vm: AtlasViewModel) {
     val conversations by vm.conversations.collectAsStateWithLifecycle()
     val current by vm.conversation.collectAsStateWithLifecycle()
     var input by rememberSaveable { mutableStateOf("") }
+    var publicSearch by remember { mutableStateOf(false) }
+    val prefs by vm.settings.collectAsStateWithLifecycle()
     var history by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<Conversation?>(null) }
     val scroll = rememberLazyListState()
@@ -96,9 +99,11 @@ fun ChatScreen(vm: AtlasViewModel) {
                 Text("Atlas IA", style = MaterialTheme.typography.headlineSmall)
                 Text(if (engine.model != null) "Local · ${engine.model}" else "Instala um modelo em Mais → Modelos", style = MaterialTheme.typography.labelSmall, maxLines = 1)
             }
+            IconButton(onClick = { publicSearch = true }, enabled = !chat.generating) { Icon(Icons.Default.TravelExplore, "Pesquisar fontes") }
             IconButton(onClick = { history = true }) { Icon(Icons.Default.History, "Conversas") }
             IconButton(onClick = { vm.selectConversation(null) }, enabled = !chat.generating) { Icon(Icons.Default.AddComment, "Nova conversa") }
         }
+        Text(if (prefs.onlineEnabled) "Fontes locais · pesquisa pública quando houver Internet" else "Só fontes locais · pesquisa online desligada", Modifier.padding(horizontal = 18.dp), style = MaterialTheme.typography.labelSmall)
         if (engine.metrics.phase != 0 || engine.stopping) InferenceMetricsView(engine, compact = true)
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = scroll, contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (messages.isEmpty()) item {
@@ -121,7 +126,8 @@ fun ChatScreen(vm: AtlasViewModel) {
                         else "A consultar ${toolLabel(call.tool)} neste dispositivo."
                     } else message.content
                 }
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
+                val evidence = remember(message.content) { if (system) Grounding.parseReceipt(message.content) else null }
+                if (evidence != null) EvidenceCards(evidence, vm::tell) else Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
                     Text(if (user) "Tu" else if (system) "Aplicação · dados e operações" else "Atlas · texto gerado localmente", style = MaterialTheme.typography.labelSmall)
                     Surface(shape = RoundedCornerShape(18.dp), color = if (user) MaterialTheme.colorScheme.primaryContainer else if (system) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier.widthIn(max = 560.dp).combinedClickable(onClick = { expanded = !expanded }, onLongClick = { clipboard.setText(AnnotatedString(display)); vm.tell("Texto copiado.") })) {
@@ -163,6 +169,7 @@ fun ChatScreen(vm: AtlasViewModel) {
             IconButton(onClick = { vm.send(input); input = "" }, enabled = input.isNotBlank() && !chat.generating && chat.proposal == null) { Icon(Icons.AutoMirrored.Filled.Send, "Enviar") }
         }
     }
+    if (publicSearch) PublicSearchDialog(vm, { publicSearch = false })
     if (history) AlertDialog(onDismissRequest = { history = false }, title = { Text("Conversas") },
         text = { LazyColumn(Modifier.heightIn(max = 420.dp)) {
             if (conversations.isEmpty()) item { Text("Ainda sem conversas.") }

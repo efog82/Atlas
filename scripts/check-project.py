@@ -19,7 +19,12 @@ class ProjectChecks(unittest.TestCase):
     def test_manifest_privacy_and_components(self):
         manifest = ET.parse(ROOT / "app/src/main/AndroidManifest.xml").getroot()
         permissions = {p.get(ANDROID + "name") for p in manifest.findall("uses-permission")}
-        self.assertNotIn("android.permission.INTERNET", permissions)
+        self.assertIn("android.permission.INTERNET", permissions)
+        self.assertIn("android.permission.ACCESS_NETWORK_STATE", permissions)
+        transport = (ROOT / "app/src/main/java/pt/atlas/personal/knowledge/WikiApi.kt").read_text()
+        self.assertIn("check(permitted())", transport)
+        self.assertIn("instanceFollowRedirects = false", transport)
+        self.assertIn("https://pt.wikipedia.org/w/api.php", transport)
         self.assertNotIn("android.permission.READ_EXTERNAL_STORAGE", permissions)
         application = manifest.find("application")
         self.assertEqual("false", application.get(ANDROID + "allowBackup"))

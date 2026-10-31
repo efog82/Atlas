@@ -109,4 +109,27 @@ class DatabaseAgentTest {
         ReminderScheduler(app, db.dao()).cancel(saved.id)
     }
 
+    @Test fun publicKnowledgePersistsAndCannotOverwriteOrRecreatePrivateOrDeletedRecords() = runBlocking {
+        val api = pt.atlas.personal.knowledge.WikiApi(pt.atlas.personal.knowledge.WikiTransport { error("No HTTP in this test") })
+        var knowledge = pt.atlas.personal.knowledge.KnowledgeStore(app, api, db)
+        val privateEntry = Record(kind = Kind.JOURNAL, title = "Privado", body = "Fotossíntese no meu diário privado")
+        db.dao().save(privateEntry)
+        val page = pt.atlas.personal.knowledge.WikiPage(10, "Fotossíntese", "A fotossíntese utiliza luz nas plantas.", 22, "2026-10-31T09:00:00Z")
+        val record = knowledge.cache(page)!!
+        assertEquals(Kind.SOURCE, record.kind)
+        assertEquals(22L, pt.atlas.personal.knowledge.SourceMeta.parse(record.body)!!.revision)
+        val found = knowledge.local("O que é fotossíntese?")
+        assertTrue(found.isNotEmpty())
+        assertTrue(found.none { it.private })
+        db.close(); open()
+        knowledge = pt.atlas.personal.knowledge.KnowledgeStore(app, api, db)
+        assertEquals(record, db.dao().record(record.id))
+        knowledge.cache(page.copy(revision = 23, text = "As plantas fazem fotossíntese."), onlyExisting = true)
+        assertEquals(privateEntry, db.dao().record(privateEntry.id))
+        assertEquals(1, db.dao().sections(record.id).size)
+        db.dao().deleteRecord(record.id)
+        assertNull(knowledge.cache(page, onlyExisting = true))
+        assertNull(db.dao().record(record.id))
+    }
+
 }

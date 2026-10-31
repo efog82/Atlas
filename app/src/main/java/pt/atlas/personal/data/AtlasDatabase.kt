@@ -11,7 +11,8 @@ object Kind {
     const val MEMORY = "memory"
     const val HABIT = "habit"
     const val DOCUMENT = "document"
-    val all = setOf(TASK, EVENT, JOURNAL, NOTE, MEMORY, HABIT, DOCUMENT)
+    const val SOURCE = "knowledge-source"
+    val all = setOf(TASK, EVENT, JOURNAL, NOTE, MEMORY, HABIT, DOCUMENT, SOURCE)
 }
 
 @Entity(tableName = "records", indices = [Index("kind"), Index("dueAt")])
@@ -49,6 +50,8 @@ data class Message(@PrimaryKey val id: String = java.util.UUID.randomUUID().toSt
     val conversationId: String, val role: String, val content: String,
     val createdAt: Long = System.currentTimeMillis())
 
+data class EvidenceRecord(val id: String, val kind: String, val title: String, val text: String, val createdAt: Long, val dueAt: Long?)
+
 @Dao
 interface AtlasDao {
     @Query("SELECT * FROM records ORDER BY updatedAt DESC") fun observeRecords(): Flow<List<Record>>
@@ -56,12 +59,19 @@ interface AtlasDao {
     @Query("SELECT * FROM records WHERE id = :id") suspend fun record(id: String): Record?
     @Query("SELECT * FROM records WHERE kind = :kind ORDER BY dueAt, createdAt LIMIT :limit")
     suspend fun byKind(kind: String, limit: Int = 50): List<Record>
-    @Query("SELECT * FROM records WHERE (title LIKE :pattern ESCAPE '\' OR body LIKE :pattern ESCAPE '\' OR tags LIKE :pattern ESCAPE '\') AND kind IN (:kinds) ORDER BY updatedAt DESC LIMIT :limit")
+    @Query("SELECT * FROM records WHERE (title LIKE :pattern ESCAPE '\\' OR body LIKE :pattern ESCAPE '\\' OR tags LIKE :pattern ESCAPE '\\') AND kind IN (:kinds) ORDER BY updatedAt DESC LIMIT :limit")
     suspend fun search(pattern: String, kinds: List<String>, limit: Int = 12): List<Record>
-    @Query("SELECT * FROM sections WHERE text LIKE :pattern ESCAPE '\' ORDER BY documentId, page LIMIT :limit")
+    @Query("SELECT * FROM sections WHERE text LIKE :pattern ESCAPE '\\' ORDER BY documentId, page LIMIT :limit")
     suspend fun searchSections(pattern: String, limit: Int = 8): List<Section>
     @Query("SELECT * FROM sections WHERE documentId = :id ORDER BY page") suspend fun sections(id: String): List<Section>
     @Query("SELECT * FROM sections ORDER BY documentId, page") suspend fun allSections(): List<Section>
+    @Query("SELECT id, documentId, page, substr(text, max(1, instr(lower(text), lower(:term)) - 180), 1600) AS text FROM sections WHERE text LIKE :pattern ESCAPE '\\' LIMIT :limit")
+    suspend fun evidenceSections(term: String, pattern: String, limit: Int = 8): List<Section>
+    @Query("SELECT id, kind, title, substr(body, max(1, instr(lower(body), lower(:term)) - 180), 1400) AS text, createdAt, dueAt FROM records WHERE kind IN (:kinds) AND (title LIKE :pattern ESCAPE '\\' OR body LIKE :pattern ESCAPE '\\' OR tags LIKE :pattern ESCAPE '\\') ORDER BY updatedAt DESC LIMIT :limit")
+    suspend fun evidenceRecords(term: String, pattern: String, kinds: List<String>, limit: Int = 6): List<EvidenceRecord>
+    @Query("SELECT * FROM records WHERE kind = 'knowledge-source' ORDER BY updatedAt ASC LIMIT :limit")
+    suspend fun sourcesForRefresh(limit: Int = 20): List<Record>
+    @Query("DELETE FROM sections WHERE documentId = :id") suspend fun deleteSections(id: String)
     @Upsert suspend fun save(record: Record)
     @Upsert suspend fun saveSections(sections: List<Section>)
     @Query("DELETE FROM records WHERE id = :id") suspend fun deleteRecord(id: String)

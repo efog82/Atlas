@@ -13,7 +13,8 @@ data class Preferences(val theme: String = "system", val lock: Boolean = false,
     val profile: String = "BALANCED", val threads: Int = 2, val batchThreads: Int = 4,
     val batch: Int = 128, val microbatch: Int = 32, val autoLoad: Boolean = true,
     val thinking: Boolean = false, val factual: Boolean = true, val allowChatml: Boolean = false,
-    val samplingOverrides: Map<String, SamplingConfig> = emptyMap())
+    val samplingOverrides: Map<String, SamplingConfig> = emptyMap(),
+    val onlineEnabled: Boolean = true, val autoPersonal: Boolean = true, val requireSources: Boolean = true, val refreshKnowledge: Boolean = true)
 
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("atlas-settings", Context.MODE_PRIVATE)
@@ -24,7 +25,8 @@ class Settings(context: Context) {
         prefs.getInt("batchThreads", 4).coerceIn(1, 8), prefs.getInt("batch", 128).takeIf { it in setOf(32,64,128,256,512) } ?: 128,
         prefs.getInt("microbatch", 32).takeIf { it in setOf(8,16,32,64,128) && it <= prefs.getInt("batch",128) } ?: 16,
         prefs.getBoolean("autoLoad", true), prefs.getBoolean("thinking", false), prefs.getBoolean("factual", true),
-        prefs.getBoolean("allowChatml", false), readSampling()))
+        prefs.getBoolean("allowChatml", false), readSampling(), prefs.getBoolean("onlineEnabled", true),
+        prefs.getBoolean("autoPersonal", true), prefs.getBoolean("requireSources", true), prefs.getBoolean("refreshKnowledge", true)))
     private fun readSampling(): Map<String, SamplingConfig> = runCatching {
         val root = JSONObject(prefs.getString("samplingOverrides", "{}") ?: "{}")
         root.keys().asSequence().mapNotNull { key -> runCatching {
@@ -45,7 +47,8 @@ class Settings(context: Context) {
         val overrides = JSONObject()
         value.samplingOverrides.forEach { (key, c) -> overrides.put(key, JSONObject().put("temperature", c.temperature.toDouble())
             .put("topP", c.topP.toDouble()).put("topK", c.topK).put("minP", c.minP.toDouble()).put("repeatPenalty", c.repeatPenalty.toDouble())) }
-        prefs.edit().putBoolean("thinking", value.thinking).putBoolean("factual", value.factual).putBoolean("allowChatml", value.allowChatml)
+        prefs.edit().putBoolean("onlineEnabled", value.onlineEnabled).putBoolean("autoPersonal", value.autoPersonal)
+            .putBoolean("requireSources", value.requireSources).putBoolean("refreshKnowledge", value.refreshKnowledge).putBoolean("thinking", value.thinking).putBoolean("factual", value.factual).putBoolean("allowChatml", value.allowChatml)
             .putString("samplingOverrides", overrides.toString()).putString("theme", value.theme).putBoolean("lock", value.lock)
             .putInt("context", value.contextTokens).putInt("tokens", value.maxTokens).putInt("memory", value.memoryMb)
             .putString("profile", value.profile).putInt("threads", value.threads).putInt("batchThreads", value.batchThreads)
