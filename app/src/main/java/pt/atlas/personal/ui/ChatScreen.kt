@@ -19,6 +19,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pt.atlas.personal.data.Conversation
 import pt.atlas.personal.agent.ToolProtocol
 import org.json.JSONObject
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.currentCoroutineContext
 
 private fun toolLabel(name: String): String = when (name) {
     "tasks.list" -> "tarefas"; "agenda.list" -> "agenda"; "memory.list" -> "memórias autorizadas"
@@ -72,8 +75,16 @@ fun ChatScreen(vm: AtlasViewModel) {
     var deleting by remember { mutableStateOf<Conversation?>(null) }
     val scroll = rememberLazyListState()
     val clipboard = LocalClipboardManager.current
-    LaunchedEffect(messages.size, chat.partial.length, chat.proposal) {
+    LaunchedEffect(messages.size, chat.proposal) {
         if (scroll.layoutInfo.totalItemsCount > 0) scroll.animateScrollToItem(scroll.layoutInfo.totalItemsCount - 1)
+    }
+    LaunchedEffect(chat.generating) {
+        while (chat.generating && currentCoroutineContext().isActive) {
+            delay(300)
+            val total = scroll.layoutInfo.totalItemsCount
+            val last = scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            if (total > 0 && last >= total - 2 && !scroll.isScrollInProgress) scroll.scrollToItem(total - 1)
+        }
     }
     Column(Modifier.fillMaxSize().imePadding()) {
         Row(Modifier.padding(horizontal = 18.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -84,6 +95,7 @@ fun ChatScreen(vm: AtlasViewModel) {
             IconButton(onClick = { history = true }) { Icon(Icons.Default.History, "Conversas") }
             IconButton(onClick = { vm.selectConversation(null) }, enabled = !chat.generating) { Icon(Icons.Default.AddComment, "Nova conversa") }
         }
+        if (engine.metrics.phase != 0 || engine.stopping) InferenceMetricsView(engine, compact = true)
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = scroll, contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (messages.isEmpty()) item {
                 EmptyCard("Em que posso ajudar?", "Após carregar um modelo, as respostas são geradas neste dispositivo. As ferramentas consultam dados locais e pedem confirmação antes de guardar alterações.")
@@ -140,7 +152,7 @@ fun ChatScreen(vm: AtlasViewModel) {
                 }
             } }
         }
-        if (chat.generating) OutlinedButton(onClick = vm::stop, modifier = Modifier.align(Alignment.CenterHorizontally)) { Icon(Icons.Default.Stop, null); Text(" Interromper resposta") }
+        if (chat.generating) OutlinedButton(onClick = vm::stop, enabled = !engine.stopping, modifier = Modifier.align(Alignment.CenterHorizontally)) { Icon(Icons.Default.Stop, null); Text(if (engine.stopping) " A interromper…" else " Interromper resposta") }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(input, { input = it }, modifier = Modifier.weight(1f), label = { Text("Escreve ao Atlas") }, maxLines = 5,
                 enabled = !chat.generating && chat.proposal == null)

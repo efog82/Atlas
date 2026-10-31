@@ -2,6 +2,8 @@ package pt.atlas.personal.ui
 
 import android.app.ActivityManager
 import android.app.Application
+import android.os.PowerManager
+import android.os.Build
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -43,8 +45,19 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
     private val mutableSources = MutableStateFlow<List<Section>>(emptyList())
     val sources = mutableSources.asStateFlow()
     private var chatJob: Job? = null
+    private var benchmarkJob: Job? = null
+    private val mutableBenchmark = MutableStateFlow<List<BenchmarkResult>>(emptyList())
+    val benchmark = mutableBenchmark.asStateFlow()
 
-    init { launch { app.reminders.reschedule() } }
+    init {
+        launch { app.reminders.reschedule() }
+        if (settings.value.autoLoad) {
+            val available = mutableModels.value
+            val last = available.firstOrNull { it.file.name == app.settings.lastModel }
+                ?: available.singleOrNull()?.takeIf { app.settings.lastModel == null }
+            if (last != null) loadModel(last.file)
+        }
+    }
 
     fun clearNotice() { mutableNotice.value = null }
     fun tell(text: String) { mutableNotice.value = text }
@@ -136,7 +149,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                 repeat(4) {
                     currentCoroutineContext().ensureActive()
                     partial = ""
-                    app.engine.generate(turns, settings.value).collect { value ->
+                    app.engine.generate(turns, settings.value, conversationId).collect { value ->
                         partial = value; mutableChat.value = mutableChat.value.copy(partial = value)
                     }
                     currentCoroutineContext().ensureActive()
@@ -168,7 +181,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
             } finally { mutableChat.value = mutableChat.value.copy(generating = false, partial = "") }
         }
     }
-    fun stop() { app.engine.stop(); chatJob?.cancel() }
+    fun stop() { app.engine.stop(); chatJob?.cancel(); benchmarkJob?.cancel() }
 
     fun importModel(uri: Uri) = operation("A importar modelo…") {
         store.import(uri) { bytes -> mutableOperation.value = "A importar modelo: ${bytes / 1048576} MB" }
@@ -179,12 +192,72 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
         val memory = ActivityManager.MemoryInfo()
         app.getSystemService(ActivityManager::class.java).getMemoryInfo(memory)
         app.engine.load(file, settings.value, memory.availMem)
+        app.settings.rememberModel(file.name)
         tell("Modelo carregado. A IA funciona sem Internet.")
     }
     fun unloadModel() = operation("A libertar memória…") { app.engine.unload() }
     fun deleteModel(file: File) = operation("A eliminar modelo…") {
         if (engine.value.model == file.name) app.engine.unload()
         withContext(Dispatchers.IO) { store.delete(file) }; mutableModels.value = withContext(Dispatchers.IO) { store.list() }
+        if (app.settings.lastModel == file.name) app.settings.rememberModel(null)
+    }
+    fun clearInferenceCache() = operation("A libertar KV cache…") { app.engine.clearCache(); tell("KV cache limpa. O histórico foi mantido.") }
+
+    // Explicit, synthetic on-device measurement. No personal data, no background benchmark.
+    fun compareProfiles() {
+        if (mutableOperation.value != null || chat.value.generating || engine.value.model == null) {
+            tell("Carrega um modelo e termina a operação atual primeiro."); return
+        }
+        mutableOperation.value = "A comparar perfis no dispositivo…"
+        mutableBenchmark.value = emptyList()
+        val base = settings.value
+        benchmarkJob = launch {
+            try {
+                val turns = listOf(Turn("system", "Responde em português de forma breve."),
+                    Turn("user", "Lê este material e indica uma ideia principal: " + "Estudar com calma e rever os apontamentos ajuda a aprender. ".repeat(32)))
+                for (profile in InferenceProfile.entries) {
+                    currentCoroutineContext().ensureActive()
+                    val thermal = app.getSystemService(PowerManager::class.java)
+                    if (thermal.currentThermalStatus >= PowerManager.THERMAL_STATUS_SEVERE) {
+                        tell("Comparação interrompida: temperatura elevada. Deixa o dispositivo arrefecer."); break
+                    }
+                    val prefs = profile.applyTo(base).copy(contextTokens = 1024, maxTokens = 64)
+                    val sessionId = "benchmark-${java.util.UUID.randomUUID()}"
+                    app.engine.clearCache()
+                    var output = ""
+                    mutableOperation.value = "${profile.label}: pedido sem cache…"
+                    withTimeout(300000) { app.engine.generate(turns, prefs, sessionId).collect { output = it } }
+                    mutableBenchmark.update { it + BenchmarkResult(profile.label, false, engine.value.metrics, thermal.currentThermalStatus) }
+                    currentCoroutineContext().ensureActive()
+                    mutableOperation.value = "${profile.label}: continuação com cache…"
+                    val followup = turns + Turn("assistant", output) + Turn("user", "Dá mais uma sugestão breve.")
+                    withTimeout(300000) { app.engine.generate(followup, prefs, sessionId).collect { } }
+                    mutableBenchmark.update { it + BenchmarkResult(profile.label, true, engine.value.metrics, thermal.currentThermalStatus) }
+                    delay(2000)
+                }
+            } finally {
+                withContext(NonCancellable) { app.engine.clearCache() }
+                mutableOperation.value = null
+            }
+        }
+    }
+    fun exportBenchmark(uri: Uri) = operation("A exportar comparação…") {
+        val rows = org.json.JSONArray()
+        benchmark.value.forEach { row ->
+            val m = row.metrics
+            rows.put(org.json.JSONObject().put("profile", row.profile).put("warm", row.warm).put("threads", m.threads)
+                .put("threads_batch", m.batchThreads).put("batch", m.batch).put("ubatch", m.microbatch)
+                .put("context", m.contextTokens).put("prompt_tokens", m.promptTokens).put("evaluated", m.evaluated)
+                .put("reused", m.reused).put("output_tokens", m.generated).put("prefill_ms", m.prefillMs)
+                .put("decode_ms", m.generationMs).put("ttft_ms", m.firstTokenMs).put("total_ms", m.totalMs)
+                .put("tokens_per_second", m.tokensPerSecond).put("estimated_bytes", m.estimatedBytes)
+                .put("thermal_status", row.thermalStatus))
+        }
+        val json = org.json.JSONObject().put("device", Build.MODEL).put("soc", Build.SOC_MODEL)
+            .put("android", Build.VERSION.RELEASE).put("model", engine.value.model).put("backend", "CPU")
+            .put("measured_at", java.time.Instant.now().toString()).put("results", rows)
+        withContext(Dispatchers.IO) { app.contentResolver.openOutputStream(uri, "wt").use { requireNotNull(it).write(json.toString(2).toByteArray()) } }
+        tell("Resultados reais deste dispositivo exportados. Consumo energético não medido.")
     }
     fun importDocument(uri: Uri) = operation("A extrair texto do documento…") {
         DocumentImporter(app).import(uri); tell("Documento importado e pesquisável offline.")

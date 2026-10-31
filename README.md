@@ -1,5 +1,7 @@
 # Atlas Personal
 
+**Versão 0.2:** contexto persistente, KV cache por conversa, interrupção dentro do grafo CPU, perfis e comparação local com métricas. [Análise e testes de desempenho](docs/DESEMPENHO.md). Não há resultados de velocidade do Redmi inventados.
+
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
 **Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com testes JVM, lint e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41190383308) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41190383308/artifacts/13038955824).

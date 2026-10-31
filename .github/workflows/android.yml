@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Native cache policy tests
+        run: bash scripts/test-native-policy.sh
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,7 +33,9 @@ jobs:
       - name: Prepare llama.cpp
         run: bash scripts/setup-native.sh
       - name: Unit tests, lint and debug APK
-        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug
+        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Verify optimized inference kernels
+        run: python3 scripts/verify-native-optimization.py
       - name: Static project checks
         run: python3 scripts/check-project.py
       - name: Upload APK and reports
