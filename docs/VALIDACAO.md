@@ -1,5 +1,24 @@
 # Validação — 31 de outubro de 2026
 
+## Atualização: compilação concluída no GitHub Actions
+
+- Repositório publicado: https://github.com/efog82/Atlas
+- Commit compilado: `1a4208f2b391304641b5192175c89a33802d3786`.
+- Execução: https://github.com/efog82/Atlas/actions/runs/41190383308 — **success**.
+- `testDebugUnitTest lintDebug assembleDebug`: **BUILD SUCCESSFUL**, incluindo compilação Kotlin, Room/KSP e JNI/C++ ARM64. Testes JVM executados sem falhas; lint aprovado.
+- Sete verificações estáticas também executadas com sucesso no runner.
+- Artefacto `atlas-personal-debug-arm64`, ID `13038955824`, ZIP de 27 224 231 bytes com APK e relatórios. [Descarregar](https://github.com/efog82/Atlas/actions/runs/41190383308/artifacts/13038955824).
+- SHA-256 do ZIP, comunicado pelo GitHub: `bc3b2d370ebf87f28a6300e977f55e8d5095cff0ad96f3577a8862b262666617`.
+- llama.cpp: `b5046`, commit `74d4f5b041ad837153b0e90fc864b8290e01d8d5`, confirmado e fixado no script.
+- Wrapper oficial Gradle incluído e validado contra o blob da versão `v8.11.1`: SHA-256 `2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`.
+- Corrigidos durante a compilação: pacote Android obsoleto `tools` no workflow e retorno antecipado numa função Kotlin com corpo de expressão no ReminderWorker.
+
+**Não executado:** instalação/abertura em dispositivo Android, testes instrumentados, inferência real com modelo, validação de persistência no dispositivo, entrega de notificações e medições de RAM/velocidade. A compilação bem-sucedida não demonstra esses critérios.
+
+O restante relatório abaixo documenta a primeira tentativa local, anterior à publicação. Os estados de build e testes JVM dessa tentativa foram superados pela execução acima; os limites funcionais e a necessidade de aceitação em dispositivo continuam aplicáveis.
+
+---
+
 ## Executado neste ambiente
 
 - `python3 scripts/check-project.py`: **7 verificações estáticas aprovadas**: XML, permissões no manifesto fonte, símbolos JNI, ficheiros/testes, configuração Android/ABI, entrada de confirmação e workflow.

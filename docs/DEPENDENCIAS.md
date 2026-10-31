@@ -24,6 +24,12 @@ As versões estão fixadas para a combinação AGP 8.9.2 / Gradle 8.11.1 / JDK 1
 
 A ponte JNI foi escrita para `llama_model_load_from_file`, `llama_model_get_vocab`, `llama_init_from_model`, `llama_chat_apply_template`, `llama_decode` e sampler chain. Segue o padrão de modelo/contexto nativo e geração fora da UI do exemplo Android; não é uma cópia apresentada como validada do exemplo. O primeiro build deve confirmar a API contra a tag obtida. Não substituas silenciosamente por `master`, porque a API C evolui.
 
-O script regista o SHA Git efetivo para rastreio. A dependência está fixada por tag, não por hash de commit verificado nesta sessão. Para distribuição de produção, fixa também o SHA após a revisão.
+O script regista o SHA Git efetivo para rastreio. Após a publicação no GitHub, a tag foi consultada e o commit `74d4f5b041ad837153b0e90fc864b8290e01d8d5` ficou também fixado e verificado no script.
 
 Português e licença Apache 2.0 são características conhecidas da família Qwen selecionada. A ficha atual, hash/tamanho do GGUF e desempenho neste motor/dispositivo não puderam ser verificados aqui. A app permite importar alternativas suportadas pela versão do motor.
+
+## Verificações posteriores à publicação
+
+Foi possível consultar via ligação GitHub o cabeçalho oficial `include/llama.h` e `examples/llama.android/llama/src/main/cpp/llama-android.cpp` em `b5046`. As funções usadas na ponte JNI estão presentes. A compilação efetiva C++/Kotlin/Gradle terminou com sucesso na execução `41190383308`.
+
+O wrapper oficial foi obtido de `gradle/gradle`, versão `v8.11.1`, incluindo o JAR binário, e incluído no repositório. As limitações de bootstrap descritas na primeira tentativa deixaram de se aplicar. A consulta de todas as restantes páginas de documentação e a validação do modelo em hardware continuam por concluir.

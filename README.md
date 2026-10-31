@@ -2,7 +2,9 @@
 
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
-**Estado real:** código implementado, mas compilação e execução Android ainda não verificadas. Não existe APK gerado nesta sessão. A ligação ao proxy falhou; não foi possível obter Gradle, SDK/NDK, llama.cpp ou modelos. Os testes Kotlin/Android e a inferência não foram executados. As sete verificações estáticas Python passaram. Consulta [o relatório de validação](docs/VALIDACAO.md).
+**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com testes JVM, lint e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41190383308) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41190383308/artifacts/13038955824).
+
+Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. Ainda não houve execução num dispositivo Android nem inferência com GGUF: esses critérios permanecem por verificar. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
 
 ## Funcionalidades no código
 
@@ -78,7 +80,7 @@ Exportar memórias em JSON é uma ação separada **sem encriptação**, com avi
 
 ```bash
 python3 scripts/check-project.py       # verificações estáticas, sem Android
-./gradlew testDebugUnitTest            # 17 testes escritos, não executados nesta sessão
+./gradlew testDebugUnitTest            # testes JVM executados com sucesso no GitHub Actions
 ./gradlew connectedDebugAndroidTest   # 8 testes instrumentados; Android ARM64 necessário
 ```
 
