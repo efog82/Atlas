@@ -25,6 +25,15 @@ system = '\n\n'.join([base, constant(policy, 'language'), constant(policy, 'fact
 (out / 'system.txt').write_text(system)
 models = [('qwen3', 'Qwen/Qwen3-0.6B-GGUF'), ('gemma3', 'ggml-org/gemma-3-1b-it-GGUF'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct-GGUF')]
 identities = []
+# Public official model cards: retain the recommendations/licences alongside test evidence.
+for label, repo in [('qwen3', 'Qwen/Qwen3-0.6B'), ('gemma3', 'google/gemma-3-1b-it'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct')]:
+    try:
+        with get(f'https://huggingface.co/{repo}/raw/main/README.md') as response:
+            card = response.read().decode('utf-8')
+        (out / (label + '-official-model-card.md')).write_text(card)
+        print('Official guidance:', label, '\n'.join(l for l in card.splitlines() if any(w in l.lower() for w in ('temperature', 'top_p', 'top_k', 'min_p', 'repetition_penalty', 'greedy'))), flush=True)
+    except Exception as error:
+        print('Official model card unavailable:', label, str(error), flush=True)
 for label, repo in models:
     with get('https://huggingface.co/api/models/' + repo + '?blobs=true') as response:
         meta = json.load(response)

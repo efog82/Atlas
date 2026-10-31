@@ -1,5 +1,5 @@
 #include "chat_runtime.h"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>

@@ -11,7 +11,7 @@
 #include <chrono>
 #include "cache_policy.h"
 #include "chat_runtime.h"
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 // One owner (LocalEngine's mutex). Only nativeStop may run concurrently.
 namespace {
