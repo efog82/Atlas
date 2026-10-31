@@ -14,13 +14,21 @@ object KnowledgeWords {
 }
 
 object KnowledgeIntent {
+    fun liveData(text: String): Boolean {
+        val value = KnowledgeWords.fold(text)
+        if (personal(text)) return false
+        return Regex("\\b(?:noticias|noticia)\\b").containsMatchIn(value) ||
+            Regex("^quanto (?:custa|vale)\\b").containsMatchIn(value) ||
+            (Regex("\\b(?:tempo|temperatura|meteorologia|previsao|cotacao|bolsa|cambio|acoes|preco|resultado)\\b").containsMatchIn(value) &&
+                Regex("\\b(?:hoje|agora|atual|atualmente|ultimas?|recentes?|amanha)\\b").containsMatchIn(value))
+    }
     fun followUp(text: String) = Regex("^(?:explica melhor|mais detalhes|explica mais|e isso|e isto)[?.! ]*$").matches(KnowledgeWords.fold(text).trim())
     fun personal(text: String): Boolean = Regex("\\b(?:meu|minha|meus|minhas|mim|comigo|tenho|estou|sou|diario|memorias?|agenda|compromissos?|tarefas?|rotina|objetivos?|preferencias?|organizar|planear|planejar)\\b").containsMatchIn(KnowledgeWords.fold(text))
     fun planning(text: String) = Regex("\\b(?:organizar|planear|planejar|plano|rotina)\\b").containsMatchIn(KnowledgeWords.fold(text))
     fun factual(text: String): Boolean {
         val value = KnowledgeWords.fold(text).trim().removePrefix("atlas, ")
         if (value.trimEnd('?', '.', '!') in setOf("qual e o teu nome", "qual o teu nome", "como te chamas", "quem es tu")) return false
-        return Regex("^(?:o que|quem|qual|quais|quando|onde|como funciona|porque|por que|explica|define|pesquisa|procura|resume)\\b").containsMatchIn(value) || personal(text)
+        return Regex("^(?:o que|quem|qual|quais|quando|onde|como funciona|porque|por que|explica|define|pesquisa|procura|resume)\\b").containsMatchIn(value) || (personal(text) && (planning(text) || text.trimEnd().endsWith("?")))
     }
 }
 
@@ -30,11 +38,13 @@ class PublicQuery private constructor(val text: String) {
         fun fromQuestion(question: String): PublicQuery? {
             val value = question.trim().removePrefix("Atlas, ").removePrefix("atlas, ")
             if (!Regex("^(?:o que|quem|qual|quais|quando|onde|como funciona|porque|por que|explica|define|pesquisa|procura)\\b").containsMatchIn(KnowledgeWords.fold(value))) return null
-            return validate(value)
+            return validate(value, explicit = false)
         }
-        fun fromPublicTopic(topic: String): PublicQuery? = validate(topic.trim())
-        private fun validate(value: String): PublicQuery? {
-            if (value.length !in 3..180 || KnowledgeIntent.personal(value)) return null
+        fun fromPublicTopic(topic: String): PublicQuery? = validate(topic.trim(), explicit = true)
+        private fun validate(value: String, explicit: Boolean): PublicQuery? {
+            if (value.length !in 3..180) return null
+            val personal = if (explicit) Regex("\\b(?:meu|minha|meus|minhas|mim|comigo|tenho|estou|sou)\\b").containsMatchIn(KnowledgeWords.fold(value)) else KnowledgeIntent.personal(value)
+            if (personal) return null
             if (Regex("\\b(?:tratamento|diagnostico|medicacao|sintomas|salario|morada|endereco|telefone|contacto|password|senha|nif|cpf|cartao|familia|esposa|filho|namorado|terapeuta)\\b").containsMatchIn(KnowledgeWords.fold(value))) return null
             if (value.any { it in "\n\r@{}<>\"“”" } || Regex("(?i)https?://|www\\.|\\d{4,}|\\+?\\d[\\d ()-]{7,}\\d").containsMatchIn(value)) return null
             val terms = KnowledgeWords.terms(value)

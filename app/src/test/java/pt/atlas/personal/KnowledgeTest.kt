@@ -12,6 +12,12 @@ class KnowledgeTest {
         }
         assertEquals("espiritismo", PublicQuery.fromQuestion("O que é o espiritismo?")!!.text)
         assertEquals("capital espanha", PublicQuery.fromQuestion("Qual é a capital de Espanha?")!!.text)
+        assertNotNull(PublicQuery.fromPublicTopic("Diário de Anne Frank"))
+        assertTrue(KnowledgeIntent.liveData("Qual é a temperatura em Lisboa hoje?"))
+        assertFalse(KnowledgeIntent.liveData("O que é a temperatura?"))
+        assertFalse(KnowledgeIntent.liveData("O que escrevi no meu diário sobre o tempo hoje?"))
+        assertFalse(KnowledgeIntent.factual("Estou triste"))
+        assertTrue(KnowledgeIntent.factual("Ajuda-me a organizar o dia"))
         assertNull(PublicQuery.fromQuestion("E isso?"))
         assertNull(PublicQuery.fromQuestion("Espiritismo")) // ambiguous bare topic needs the explicit public-search field
     }

@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.request
 out = pathlib.Path('knowledge-smoke')
 out.mkdir(exist_ok=True)
-parameters = dict(action='query',format='json',formatversion='2',prop='extracts|revisions',explaintext='1',exintro='1',exchars='8000',exlimit='max',rvprop='ids|timestamp',redirects='1',generator='search',gsrsearch='fotossíntese',gsrlimit='4')
+parameters = dict(action='query',format='json',formatversion='2',prop='extracts|revisions',explaintext='1',exintro='1',exchars='1200',exlimit='max',rvprop='ids|timestamp',redirects='1',generator='search',gsrsearch='fotossíntese',gsrlimit='4')
 url = 'https://pt.wikipedia.org/w/api.php?' + urllib.parse.urlencode(parameters)
 result = {'url': url, 'contains_personal_data': False, 'success': False}
 try:

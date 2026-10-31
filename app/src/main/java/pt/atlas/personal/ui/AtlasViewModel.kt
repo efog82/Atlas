@@ -178,9 +178,13 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     prepareProposal(conversationId, request.id, direct)
                     return@launch
                 }
-                val groundingEnabled = allowed.none { it in ToolProtocol.writes } && (KnowledgeIntent.factual(text) || KnowledgeIntent.followUp(text) || publicQuery != null)
+                val groundingEnabled = allowed.none { it in ToolProtocol.writes } && (KnowledgeIntent.factual(text) || KnowledgeIntent.personal(text) || KnowledgeIntent.followUp(text) || publicQuery != null)
                 var evidence = emptyList<Evidence>()
                 if (groundingEnabled) {
+                    if (KnowledgeIntent.liveData(publicQuery?.text ?: text)) {
+                        repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "A fonte online atual é enciclopédica. Não tenho um serviço de meteorologia, notícias ou cotações em tempo real para confirmar esse pedido. Não vou apresentar um artigo geral como informação atual."))
+                        return@launch
+                    }
                     mutableChat.value = mutableChat.value.copy(partial = "A procurar fontes locais…")
                     val lookup = if (publicQuery != null) {
                         val saved = app.knowledge.local(publicQuery.text)
@@ -200,7 +204,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     evidence = lookup.sources.take(count).map { it.copy(quote = it.quote.take(quoteLimit)) }
                     lookup.notice?.let { repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = it)) }
                     if (evidence.isNotEmpty()) repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = Grounding.receipt(evidence)))
-                    if (evidence.isEmpty() && settings.value.requireSources) {
+                    if (evidence.isEmpty() && settings.value.requireSources && (KnowledgeIntent.factual(text) || KnowledgeIntent.followUp(text) || publicQuery != null)) {
                         repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "Não encontrei fontes suficientes para responder com segurança. Importa documentos na Biblioteca ou pesquisa um tema público quando houver Internet. Os registos pessoais não foram incluídos na pesquisa."))
                         return@launch
                     }

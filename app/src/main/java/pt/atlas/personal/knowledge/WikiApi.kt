@@ -12,7 +12,7 @@ data class WikiPage(val pageId: Long, val title: String, val text: String, val r
 
 class WikiApi(private val transport: WikiTransport) {
     private val common = mapOf("action" to "query", "format" to "json", "formatversion" to "2", "prop" to "extracts|revisions",
-        "explaintext" to "1", "exintro" to "1", "exchars" to "8000", "exlimit" to "max", "rvprop" to "ids|timestamp", "redirects" to "1")
+        "explaintext" to "1", "exintro" to "1", "exchars" to "1200", "exlimit" to "max", "rvprop" to "ids|timestamp", "redirects" to "1")
     suspend fun search(query: PublicQuery): List<WikiPage> = parse(transport.get(common + mapOf("generator" to "search", "gsrsearch" to query.text, "gsrlimit" to "4"))).take(4)
     suspend fun refresh(pageIds: List<Long>): List<WikiPage> {
         require(pageIds.isNotEmpty() && pageIds.size <= 20 && pageIds.all { it > 0 })

@@ -57,8 +57,10 @@ class KnowledgeStore(private val app: AtlasApp, private val wiki: WikiApi, priva
         }
         val ranked = EvidenceRanker.rank(question, candidates.distinctBy { it.title + it.location + it.quote }, 4)
         if (privateAllowed && KnowledgeIntent.planning(question)) {
-            val agenda = LocalReadFormatter.format(LocalRead(Kind.EVENT, LocalDate.now()), dao.records())
-            return@withContext (listOf(Evidence("agenda:today", "Agenda de hoje", agenda.take(1400), "Consulta local atual", true)) + ranked).take(4)
+            val day = if (Regex("\\bamanha\\b").containsMatchIn(KnowledgeWords.fold(question))) LocalDate.now().plusDays(1) else LocalDate.now()
+            val agenda = LocalReadFormatter.format(LocalRead(Kind.EVENT, day), dao.records())
+            val memories = dao.byKind(Kind.MEMORY, 2).map { r -> Evidence("record:${r.id}", r.title, (r.title + "\n" + r.body).take(1400), "Memória explicitamente guardada", true) }
+            return@withContext (listOf(Evidence("agenda:$day", "Agenda · $day", agenda.take(1400), "Consulta local atual", true)) + ranked + memories).distinctBy { it.id }.take(4)
         }
         if (ranked.isEmpty() && privateAllowed) {
             return@withContext dao.byKind(Kind.MEMORY, 4).map { r -> Evidence("memory:${r.id}", r.title,
