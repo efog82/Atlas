@@ -68,7 +68,7 @@ Não há números de velocidade do Redmi medidos nesta sessão. A confirmação 
 
 Antes de atualizar, exporta uma cópia encriptada dos dados. Os APK debug produzidos em runners diferentes podem ter assinaturas diferentes; se o Android rejeitar a atualização, não desinstales antes de assegurar essa cópia e o GGUF original fora do armazenamento privado da app. A cópia encriptada não inclui pesos GGUF. Uma instalação normal por cima, quando aceite pelo Android, preserva Room e os modelos; a versão da base de dados não foi alterada.
 
-O relógio completo do agente é acrescentado a cada pedido do utilizador a partir da data/hora persistida dessa mensagem. Assim continua a saber a referência horária, sem alterar o prefixo dos pedidos anteriores. A hora indicada numa mensagem antiga é a hora dessa mensagem, não a hora atual de um pedido posterior.
+Na versão 0.2.2, as mensagens do utilizador deixam de receber qualquer cabeçalho de relógio. A referência temporal só é fornecida separadamente no papel system quando o pedido depende de datas/horas. Conversa normal preserva o texto original e um prefixo estável, sem metadados para o modelo repetir.
 
 ## Resultado da compilação desta entrega
 

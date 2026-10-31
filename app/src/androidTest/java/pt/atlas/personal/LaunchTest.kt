@@ -16,4 +16,10 @@ class LaunchTest {
         compose.onNodeWithText("Diário").assertIsDisplayed()
         compose.onNodeWithText("Estudos").assertIsDisplayed()
     }
+    @Test fun appWindowAllowsScreenshots() {
+        compose.activityRule.scenario.onActivity { activity ->
+            org.junit.Assert.assertEquals(0, activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
 }

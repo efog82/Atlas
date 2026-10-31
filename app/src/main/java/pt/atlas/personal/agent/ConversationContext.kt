@@ -3,6 +3,7 @@ package pt.atlas.personal.agent
 import org.json.JSONObject
 import pt.atlas.personal.ai.Turn
 import pt.atlas.personal.ai.historyTurn
+import pt.atlas.personal.ai.AssistantText
 import pt.atlas.personal.data.Message
 import pt.atlas.personal.data.Kind
 
@@ -38,10 +39,11 @@ object ConversationContext {
             if (message.role == "user") {
                 owner = message.id
                 val oldAction = message.id != currentRequestId && (AgentPolicy.writeTool(message.content) != null || resolved.containsKey(message.id))
-                if (!oldAction) output += Entry(owner, historyTurn(message.role, message.content, message.createdAt))
+                if (!oldAction) output += Entry(owner, historyTurn(message.role, message.content))
             } else if (message.role == "assistant") {
-                if (!AgentPolicy.isProtocol(message.content) && output.any { it.requestId == owner }) {
-                    output += Entry(owner, Turn("assistant", message.content))
+                val content = AssistantText.clean(message.content)
+                if (content.isNotBlank() && !AgentPolicy.isProtocol(content) && output.any { it.requestId == owner }) {
+                    output += Entry(owner, Turn("assistant", content))
                 }
             } else {
                 val receipt = ActionReceipt.parse(message.content)
@@ -60,7 +62,11 @@ object ConversationContext {
         return output.map { it.turn }.takeLast(24)
     }
 
-    fun visibleMessages(messages: List<Message>): List<Message> = messages.filterNot {
-        it.role == "assistant" && AgentPolicy.isProtocol(it.content) || ActionReceipt.parse(it.content)?.status == "pending"
+    fun visibleMessages(messages: List<Message>): List<Message> = messages.mapNotNull {
+        if (it.role == "assistant") {
+            val content = AssistantText.clean(it.content)
+            if (content.isBlank() || AgentPolicy.isProtocol(content)) null else it.copy(content = content)
+        } else if (it.role == "system" && ActionReceipt.parse(it.content)?.status == "pending") null
+        else it
     }
 }

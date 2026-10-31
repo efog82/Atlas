@@ -19,7 +19,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        // Screenshots are explicitly enabled for sharing diagnostics at the user's request.
+        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         unlocked = !(application as AtlasApp).settings.state.value.lock
         setContent {
             val prefs by model.settings.collectAsState()

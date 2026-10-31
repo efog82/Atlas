@@ -74,7 +74,7 @@ Versões fixadas: AGP 8.9.2, Kotlin/Compose compiler 2.1.20, KSP 2.1.20-1.0.32, 
 
 ## Privacidade e cópias
 
-Room guarda os dados no diretório privado da app, protegido pelo Android; não usa SQLCipher. Biometria bloqueia a interface e não substitui o bloqueio/encriptação do dispositivo. Capturas e imagens das aplicações recentes são bloqueadas com `FLAG_SECURE`.
+Room guarda os dados no diretório privado da app, protegido pelo Android; não usa SQLCipher. Biometria bloqueia a interface e não substitui o bloqueio/encriptação do dispositivo. Capturas de ecrã estão permitidas a pedido do utilizador, para facilitar a partilha de erros. O bloqueio biométrico mantém-se disponível.
 
 **Mais → Cópias:** escolher destino e palavra-passe de pelo menos 10 caracteres. AES-256-GCM, salt/nonce aleatórios, PBKDF2-HMAC-SHA256 com 210 000 iterações e cabeçalho autenticado. A restauração valida o conteúdo antes de substituir os dados numa transação Room, mediante confirmação. Backups incluem registos, conversas e texto importado; não incluem modelos nem definições de bloqueio. Limite: 64 MB serializados. Sem palavra-passe, a cópia é irrecuperável.
 

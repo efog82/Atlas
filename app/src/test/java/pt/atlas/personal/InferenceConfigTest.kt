@@ -34,11 +34,10 @@ class InferenceConfigTest {
         assertFalse(first.contains("Data e hora locais:"))
         assertEquals(first, pt.atlas.personal.agent.ToolProtocol.instructions())
     }
-    @Test fun persistedUserClockIsStableAndAssistantTokensAreNotModified() {
-        val zone = java.time.ZoneId.of("Europe/Lisbon")
-        val first = historyTurn("user", "Lembra-me de estudar", 1793448000000, zone)
-        assertEquals(first, historyTurn("user", "Lembra-me de estudar", 1793448000000, zone))
-        assertTrue(first.content.contains("Data/hora local deste pedido:"))
-        assertEquals(Turn("assistant", "Olá"), historyTurn("assistant", "Olá", 1793448000000, zone))
+    @Test fun userAndAssistantTextAreNotModifiedByClockMetadata() {
+        val first = historyTurn("user", "Lembra-me de estudar")
+        assertEquals(first, historyTurn("user", "Lembra-me de estudar"))
+        assertEquals("Lembra-me de estudar", first.content)
+        assertEquals(Turn("assistant", "Olá"), historyTurn("assistant", "Olá"))
     }
 }
