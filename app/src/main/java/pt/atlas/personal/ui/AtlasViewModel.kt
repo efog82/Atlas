@@ -155,7 +155,8 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     null -> Unit
                 }
                 LocalRequests.read(text)?.let { read ->
-                    val result = LocalReadFormatter.format(read, repo.dao.records())
+                    val records = repo.dao.records()
+                    val result = withContext(Dispatchers.Default) { LocalReadFormatter.format(read, records) }
                     repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = result))
                     return@launch
                 }

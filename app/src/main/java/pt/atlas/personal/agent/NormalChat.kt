@@ -8,8 +8,11 @@ object NormalChat {
         Se não souberes, admite-o. Não inventes registos pessoais nem afirmes ter guardado algo.
     """.trimIndent()
 
-    fun standaloneQuestion(text: String): Boolean = Regex("^(?:o que (?:e|era|significa)|explica|define|como funciona|quem (?:e|foi))\\b")
-        .containsMatchIn(LocalRequests.normalized(text))
+    fun standaloneQuestion(text: String): Boolean {
+        val value = LocalRequests.normalized(text).trimEnd('?', '.', '!')
+        if (Regex("^(?:explica|define|como funciona|o que (?:e|significa))\\s+(?:melhor|mais|isso|isto|aquilo|novamente|de novo|a tua resposta|o que disseste)\\b").containsMatchIn(value)) return false
+        return Regex("^(?:o que (?:e|era|significa)|explica|define|como funciona|quem (?:e|foi))\\b").containsMatchIn(value)
+    }
 
     fun genericNonAnswer(question: String, answer: String): Boolean {
         val q = LocalRequests.normalized(question)

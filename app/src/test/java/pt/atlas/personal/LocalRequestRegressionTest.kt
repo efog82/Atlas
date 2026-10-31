@@ -54,6 +54,8 @@ class LocalRequestRegressionTest {
     }
     @Test fun ordinaryKnowledgeQuestionIsIsolatedFromOldActions() {
         assertTrue(NormalChat.standaloneQuestion("O que era o espiritismo?"))
+        assertFalse(NormalChat.standaloneQuestion("Explica melhor"))
+        assertFalse(NormalChat.standaloneQuestion("Como funciona isso?"))
         assertNull(LocalRequests.read("O que era o espiritismo?"))
         assertNull(AgentPolicy.writeTool("O que era o espiritismo?"))
         assertTrue(AgentPolicy.allowedTools("O que era o espiritismo?").isEmpty())
