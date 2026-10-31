@@ -35,14 +35,16 @@ object ConversationContext {
         val receipts = messages.mapNotNull { ActionReceipt.parse(it.content) }
         val resolved = receipts.associateBy { it.requestId }
         var owner: String? = null
+        var question = ""
         for (message in messages) {
             if (message.role == "user") {
                 owner = message.id
+                question = message.content
                 val oldAction = message.id != currentRequestId && (AgentPolicy.writeTool(message.content) != null || resolved.containsKey(message.id))
                 if (!oldAction) output += Entry(owner, historyTurn(message.role, message.content))
             } else if (message.role == "assistant") {
                 val content = AssistantText.clean(message.content)
-                if (content.isNotBlank() && !NormalChat.genericNonAnswer("pergunta", content) && !AgentPolicy.isProtocol(content) && output.any { it.requestId == owner }) {
+                if (content.isNotBlank() && !NormalChat.genericNonAnswer(question, content) && !AgentPolicy.isProtocol(content) && output.any { it.requestId == owner }) {
                     output += Entry(owner, Turn("assistant", content))
                 }
             } else {

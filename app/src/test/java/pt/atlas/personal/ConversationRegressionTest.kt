@@ -117,6 +117,12 @@ class ConversationRegressionTest {
         assertEquals(3, context.size)
         assertEquals("Olá, como posso ajudar?", context[1].content)
     }
+    @Test fun genericNonAnswerToFactualQuestionDoesNotContaminateFollowUp() {
+        val original = listOf(user("a", "O que é o espiritismo?"), assistant("Olá! Como posso te ajudar hoje?"), user("b", "Explica melhor"))
+        val context = ConversationContext.turns(original, "b")
+        assertEquals(2, context.size)
+        assertFalse(context.any { it.role == "assistant" })
+    }
     @Test fun oldParametersAndPendingReceiptsAreHiddenButCancellationRemainsVisible() {
         val cancellation = system(ActionReceipt("cancelled", "old", Kind.NOTE, "Pão").encode())
         val messages = listOf(user("old", "Anota pão"), assistant(badTask),

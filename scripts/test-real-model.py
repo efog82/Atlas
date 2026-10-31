@@ -32,17 +32,28 @@ prompt = textwrap.dedent(re.search(r'val system = """\n(.*?)\n\s*"""', source, r
 system = out / 'system.txt'
 system.write_text(prompt)
 report = {'model': repo, 'revision': revision, 'sha256': digest, 'hardware': 'GitHub Linux x86 CPU; not Redmi/Android', 'sampling': {'top_k': 40, 'top_p': 0.9, 'temperature': 0.65, 'seed': 42}, 'responses': []}
-failed = False
-for question, markers in [('O que é o espiritismo?', ['espirit', 'doutrina', 'kardec', 'reencarn']), ('Como funciona a fotossíntese?', ['luz', 'solar', 'clorof', 'dioxido', 'carbono'])]:
-    cmd = [str(root / 'native/llama.cpp/build/bin/llama-cli'), '-m', str(model), '-t', '2', '-c', '2048', '-n', '180', '--samplers', 'top_k;top_p;temperature', '--temp', '0.65', '--top-k', '40', '--top-p', '0.9', '--seed', '42', '-cnv', '-st', '-sysf', str(system), '-p', question, '--no-display-prompt', '--simple-io']
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=240)
-    answer = result.stdout.strip()
-    normalized = ''.join(c for c in unicodedata.normalize('NFD', answer.lower()) if not unicodedata.combining(c))
-    passed = result.returncode == 0 and sum(marker in normalized for marker in markers) >= 2
-    report['responses'].append({'question': question, 'answer': answer, 'stderr': result.stderr[-4000:], 'passed': passed})
-    print(question, '\n', answer, '\nMeaningful-answer smoke:', passed, flush=True)
-    if not passed:
-        print('Runner stderr:', result.stderr[-4000:], flush=True)
-    failed |= not passed
-(out / 'results.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
-raise SystemExit(1 if failed else 0)
+# Compare a short English instruction and lower temperatures without injecting factual answers.
+variants = [('app', prompt), ('short', 'You are Atlas Personal, a helpful assistant. Answer the question directly and accurately in Portuguese. If you do not know, say so.')]
+for name, instruction in variants:
+    system.write_text(instruction)
+    for temperature in (0.0, 0.25, 0.65):
+        for question, topic in [('O que era o espiritismo?', 'spiritism'), ('Como funciona a fotossíntese?', 'photosynthesis')]:
+            cmd = [str(root / 'native/llama.cpp/build/bin/llama-cli'), '-m', str(model), '-t', '2', '-c', '2048', '-n', '180', '--samplers', 'top_k;top_p;temperature', '--temp', str(temperature), '--top-k', '40', '--top-p', '0.9', '--seed', '42', '-cnv', '-st', '-sysf', str(system), '-p', question, '--no-display-prompt', '--simple-io']
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=240)
+            answer = result.stdout.strip()
+            normalized = ''.join(c for c in unicodedata.normalize('NFD', answer.lower()) if not unicodedata.combining(c))
+            if topic == 'spiritism':
+                concepts = 'espirit' in normalized and any(word in normalized for word in ('doutrina', 'kardec', 'reencarn'))
+            else:
+                concepts = any(word in normalized for word in ('planta', 'alga', 'clorof')) and ('luz' in normalized or 'solar' in normalized) and any(word in normalized for word in ('dioxido', 'carbono', 'glicose', 'acucar'))
+            passed = result.returncode == 0 and concepts
+            entry = {'variant': name, 'system': instruction, 'temperature': temperature, 'seed': 42, 'question': question, 'answer': answer, 'stderr': result.stderr[-4000:], 'passed': passed}
+            report['responses'].append(entry)
+            print(json.dumps({k: entry[k] for k in ('variant', 'temperature', 'question', 'answer', 'passed')}, ensure_ascii=False), flush=True)
+            if result.returncode:
+                print('Runner stderr:', result.stderr[-4000:], flush=True)
+            (out / 'results.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+system.write_text(prompt)
+# A diagnostic comparison: keep the primary app configuration a real quality gate.
+primary = [r for r in report['responses'] if r['variant'] == 'app' and r['temperature'] == 0.65]
+raise SystemExit(0 if all(r['passed'] for r in primary) else 1)
