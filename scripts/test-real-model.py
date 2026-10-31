@@ -23,7 +23,7 @@ policy = (root / 'app/src/main/java/pt/atlas/personal/ai/ModelCompatibility.kt')
 base = textwrap.dedent(re.search(r'val system = """\n(.*?)\n\s*"""', normal, re.S).group(1)).strip()
 system = '\n\n'.join([base, constant(policy, 'language'), constant(policy, 'factual')])
 (out / 'system.txt').write_text(system)
-models = [('qwen3', 'Qwen/Qwen3-0.6B-GGUF'), ('gemma3', 'ggml-org/gemma-3-1b-it-GGUF'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct-GGUF')]
+models = [('qwen3', 'Qwen/Qwen3-0.6B-GGUF', 'q8_0'), ('gemma3', 'ggml-org/gemma-3-1b-it-GGUF', 'q4_k_m'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct-GGUF', 'q4_k_m')]
 identities = []
 # Public official model cards: retain the recommendations/licences alongside test evidence.
 for label, repo in [('qwen3', 'Qwen/Qwen3-0.6B'), ('gemma3', 'google/gemma-3-1b-it'), ('qwen25', 'Qwen/Qwen2.5-0.5B-Instruct')]:
@@ -34,13 +34,13 @@ for label, repo in [('qwen3', 'Qwen/Qwen3-0.6B'), ('gemma3', 'google/gemma-3-1b-
         print('Official guidance:', label, '\n'.join(l for l in card.splitlines() if any(w in l.lower() for w in ('temperature', 'top_p', 'top_k', 'min_p', 'repetition_penalty', 'greedy'))), flush=True)
     except Exception as error:
         print('Official model card unavailable:', label, str(error), flush=True)
-for label, repo in models:
+for label, repo, quantization in models:
     with get('https://huggingface.co/api/models/' + repo + '?blobs=true') as response:
         meta = json.load(response)
-    candidates = [f for f in meta['siblings'] if f['rfilename'].lower().endswith('.gguf') and 'q4_k_m' in f['rfilename'].lower() and 'mmproj' not in f['rfilename'].lower()]
-    print('Q4_K_M candidates:', repo, [f['rfilename'] for f in candidates], flush=True)
-    assert candidates, f'No Q4_K_M text GGUF in {repo}; files: {[f["rfilename"] for f in meta["siblings"]]}'
-    exact = [f for f in candidates if f['rfilename'].lower().endswith('-q4_k_m.gguf')]
+    candidates = [f for f in meta['siblings'] if f['rfilename'].lower().endswith('.gguf') and quantization in f['rfilename'].lower() and 'mmproj' not in f['rfilename'].lower()]
+    print('GGUF candidates:', repo, quantization, [f['rfilename'] for f in candidates], flush=True)
+    assert candidates, f'No {quantization} text GGUF in {repo}; files: {[f["rfilename"] for f in meta["siblings"]]}'
+    exact = [f for f in candidates if f['rfilename'].lower().endswith('-' + quantization + '.gguf')]
     pool = exact or candidates
     pool.sort(key=lambda f: (f['rfilename'].count('/'), len(f['rfilename']), f['rfilename']))
     entry = pool[0]
@@ -54,7 +54,7 @@ for label, repo in models:
         source.seek(0)
         digest = hashlib.file_digest(source, 'sha256').hexdigest()
     assert digest == entry['lfs']['sha256'], 'Official LFS checksum mismatch'
-    identity = {'label': label, 'repository': repo, 'filename': filename, 'revision': revision, 'sha256': digest, 'bytes': model.stat().st_size, 'license': meta.get('cardData', {}).get('license'), 'hardware': 'Linux x86 CPU, not Android/Redmi'}
+    identity = {'label': label, 'repository': repo, 'filename': filename, 'quantization': quantization, 'revision': revision, 'sha256': digest, 'bytes': model.stat().st_size, 'license': meta.get('cardData', {}).get('license'), 'hardware': 'Linux x86 CPU, not Android/Redmi'}
     identities.append(identity)
     (out / 'models.json').write_text(json.dumps(identities, ensure_ascii=False, indent=2))
     print(json.dumps(identity), flush=True)
