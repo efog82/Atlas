@@ -14,7 +14,9 @@ object AgentPolicy {
         }
         return value
     }
-    fun writeTool(text: String): String? {
+    fun writeTool(text: String): String? = if (LocalRequests.isReminder(text)) "tasks.create" else writeToolWithoutReminder(text)
+
+    internal fun writeToolWithoutReminder(text: String): String? {
         val value = command(text)
         // Anchored commands: questions, explanations, quotations and negation do not confer permission.
         if (Regex("^(?:nao|nunca|cancela|cancelar|esquece|deixa estar)\\b").containsMatchIn(value)) return null

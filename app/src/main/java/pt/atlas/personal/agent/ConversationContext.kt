@@ -42,7 +42,7 @@ object ConversationContext {
                 if (!oldAction) output += Entry(owner, historyTurn(message.role, message.content))
             } else if (message.role == "assistant") {
                 val content = AssistantText.clean(message.content)
-                if (content.isNotBlank() && !AgentPolicy.isProtocol(content) && output.any { it.requestId == owner }) {
+                if (content.isNotBlank() && !NormalChat.genericNonAnswer("pergunta", content) && !AgentPolicy.isProtocol(content) && output.any { it.requestId == owner }) {
                     output += Entry(owner, Turn("assistant", content))
                 }
             } else {

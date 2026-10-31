@@ -48,3 +48,24 @@ jobs:
             app/build/outputs/apk/debug/*.apk
             app/build/reports/
             native/llama-revision.txt
+  real-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare pinned llama.cpp
+        run: bash scripts/setup-native.sh
+      - name: Build Linux CPU inference runner
+        run: |
+          cmake -S native/llama.cpp -B native/llama.cpp/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF
+          cmake --build native/llama.cpp/build --target llama-cli -j 2
+      - name: Test actual Qwen answers with application prompt
+        run: python3 scripts/test-real-model.py
+      - name: Upload actual responses and model identity
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-real-model-smoke
+          path: |
+            model-smoke/results.json
+            model-smoke/system.txt

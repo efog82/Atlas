@@ -27,7 +27,7 @@ fun AgendaScreen(records: List<Record>, onAdd: (String, LocalDate?) -> Unit, onO
     var mode by rememberSaveable { mutableIntStateOf(0) }
     var showTasks by rememberSaveable { mutableStateOf(false) }
     var showDone by rememberSaveable { mutableStateOf(false) }
-    val events = records.filter { it.kind == Kind.EVENT }
+    val events = records.filter { it.kind in setOf(Kind.EVENT, Kind.TASK) && it.dueAt != null && !it.done }
     val tasks = records.filter { it.kind == Kind.TASK && (showDone || !it.done) }.sortedBy { it.dueAt ?: Long.MAX_VALUE }
     val first = selected.withDayOfMonth(1)
     val gridStart = first.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))

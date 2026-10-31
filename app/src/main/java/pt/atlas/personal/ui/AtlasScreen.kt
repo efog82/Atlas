@@ -39,7 +39,7 @@ fun AtlasScreen(vm: AtlasViewModel, onLock: (Boolean) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Column {
             Text("Atlas Personal", style = MaterialTheme.typography.titleLarge)
-            Text("O teu espaço. No teu dispositivo.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text("Versão ${pt.atlas.personal.BuildConfig.VERSION_NAME} · No teu dispositivo.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         } }, actions = { Icon(Icons.Default.Shield, "Dados locais", Modifier.padding(16.dp)) }) },
         bottomBar = { NavigationBar {
             titles.forEachIndexed { index, title -> NavigationBarItem(selected = tab == index, onClick = { tab = index },

@@ -16,6 +16,7 @@ class AgentTools(private val repository: AtlasRepository) {
             }.sortedBy { it.dueAt }.take(20)
             "tasks.list" -> dao.byKind(Kind.TASK, 100).filter { !it.done }.take(30)
             "memory.list" -> dao.byKind(Kind.MEMORY, 30)
+            "journal.list" -> dao.byKind(Kind.JOURNAL, 12)
             "notes.search" -> dao.search(searchPattern(call.arguments.getValue("query")), listOf(Kind.NOTE))
             "journal.search" -> dao.search(searchPattern(call.arguments.getValue("query")), listOf(Kind.JOURNAL))
             "study.search" -> {

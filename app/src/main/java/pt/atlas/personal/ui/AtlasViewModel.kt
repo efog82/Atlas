@@ -147,15 +147,31 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                 val conversationId = requireNotNull(id)
                 val request = Message(conversationId = conversationId, role = "user", content = text)
                 repo.dao.saveMessage(request)
+                when (val reminder = LocalRequests.reminder(text)) {
+                    is ReminderResolution.Ready -> { prepareProposal(conversationId, request.id, reminder.proposal); return@launch }
+                    is ReminderResolution.Clarify -> {
+                        repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = reminder.message)); return@launch
+                    }
+                    null -> Unit
+                }
+                LocalRequests.read(text)?.let { read ->
+                    val result = LocalReadFormatter.format(read, repo.dao.records())
+                    repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = result))
+                    return@launch
+                }
+                if (LocalRequests.capabilities(text)) {
+                    repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = LocalRequests.CAPABILITIES))
+                    return@launch
+                }
                 var allowed = AgentPolicy.allowedTools(text)
                 val clockContext = clockContextFor(text, request.createdAt, allowed)
-                val direct = ToolProtocol.reminder(text) ?: ToolProtocol.note(text)
+                val direct = ToolProtocol.note(text)
                 if (direct != null && direct.tool in allowed) {
                     prepareProposal(conversationId, request.id, direct)
                     return@launch
                 }
                 val turns = mutableListOf(Turn("system", ToolProtocol.instructions(allowed, clockContext)))
-                turns += ConversationContext.turns(repo.dao.messages(conversationId), request.id)
+                turns += if (NormalChat.standaloneQuestion(text)) listOf(historyTurn("user", text)) else ConversationContext.turns(repo.dao.messages(conversationId), request.id)
                 val routed = ToolProtocol.routeRead(text)
                 if (routed != null) {
                     check(AgentPolicy.permits(routed, text))
@@ -178,7 +194,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     if (partial.isBlank()) { tell("O modelo não gerou texto. Tenta uma mensagem mais curta."); return@launch }
                     val response = AssistantText.clean(partial)
                     partial = ""; mutableChat.value = mutableChat.value.copy(partial = "")
-                    val internal = AgentPolicy.isProtocol(response) || response.isBlank()
+                    val internal = AgentPolicy.isProtocol(response) || response.isBlank() || NormalChat.genericNonAnswer(text, response)
                     val call = if (internal) runCatching { ToolProtocol.parse(response) }.getOrNull() else null
                     if (internal && (call == null || call.tool !in allowed || !AgentPolicy.permits(call, text))) {
                         // Never persist/display an unauthorized envelope or turn it into a proposal.
@@ -189,7 +205,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                         }
                         repaired = true; allowed = emptySet()
                         turns[0] = Turn("system", ToolProtocol.instructions(clockContext = clockContext))
-                        turns += historyTurn("user", "Responde diretamente a esta mensagem, sem propor nem executar registos nem repetir cabeçalhos internos: $text")
+                        turns += historyTurn("user", "Dá uma resposta concreta ao assunto desta pergunta, sem saudações nem descrever a tua função: $text")
                         return@repeat
                     }
                     if (call == null) {
