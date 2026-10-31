@@ -38,8 +38,12 @@ for label, repo in models:
     with get('https://huggingface.co/api/models/' + repo + '?blobs=true') as response:
         meta = json.load(response)
     candidates = [f for f in meta['siblings'] if f['rfilename'].lower().endswith('.gguf') and 'q4_k_m' in f['rfilename'].lower() and 'mmproj' not in f['rfilename'].lower()]
-    assert len(candidates) == 1, f'Expected one Q4_K_M text GGUF in {repo}'
-    entry = candidates[0]
+    print('Q4_K_M candidates:', repo, [f['rfilename'] for f in candidates], flush=True)
+    assert candidates, f'No Q4_K_M text GGUF in {repo}; files: {[f["rfilename"] for f in meta["siblings"]]}'
+    exact = [f for f in candidates if f['rfilename'].lower().endswith('-q4_k_m.gguf')]
+    pool = exact or candidates
+    pool.sort(key=lambda f: (f['rfilename'].count('/'), len(f['rfilename']), f['rfilename']))
+    entry = pool[0]
     filename, revision = entry['rfilename'], meta['sha']
     model = out / (label + '.gguf')
     with get(f'https://huggingface.co/{repo}/resolve/{revision}/{filename}?download=true') as source, model.open('wb') as target:

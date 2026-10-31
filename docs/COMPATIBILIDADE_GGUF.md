@@ -57,5 +57,6 @@ Os ensaios de CPU Linux não medem rapidez, RAM, energia, estabilidade do driver
 
 - [llama.cpp b6500 — chat.h](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.h), [chat.cpp](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.cpp), [minja](https://github.com/ggml-org/llama.cpp/blob/b6500/vendor/minja/chat-template.hpp) e [llama.h](https://github.com/ggml-org/llama.cpp/blob/b6500/include/llama.h).
 - [Qwen3 oficial — modos e llama.cpp](https://github.com/QwenLM/Qwen3), [modelo e recomendações](https://huggingface.co/Qwen/Qwen3-0.6B), [template de referência](https://github.com/ggml-org/llama.cpp/blob/b6500/models/templates/Qwen-Qwen3-0.6B.jinja).
+- [Implementação oficial Gemma — valores de geração](https://github.com/google/gemma_pytorch/blob/main/gemma/model.py). A leitura da ficha original Gemma no Hugging Face devolveu HTTP 401 nesta sessão; não foram usados tokens nem contornada a autenticação. Os testes usam a conversão GGUF publicamente acessível do ggml-org.
 - [Gemma 3 — formato](https://ai.google.dev/gemma/docs/core/prompt-structure), [modelo e configuração](https://huggingface.co/google/gemma-3-1b-it), [termos Gemma](https://ai.google.dev/gemma/terms).
 - [Qwen2.5 Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct).

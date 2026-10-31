@@ -53,7 +53,7 @@ class LocalEngine {
                     meta.getBoolean("thinkingSwitch"), meta.getBoolean("reasoning"), meta.getBoolean("manualTemplate"), meta.getBoolean("thinkingForced"))
                 mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start, info = info,
                     sampling = preferences.samplingOverrides[file.name] ?: SamplingConfig.recommended(info, info.effectiveThinking(preferences.thinking)))
-            } catch (e: Throwable) { modelBytes = 0; mutable.value = EngineStatus(); throw e }
+            } catch (e: Throwable) { runCatching { nativeUnload() }; modelBytes = 0; mutable.value = EngineStatus(); throw e }
         }
     }
     suspend fun unload() = withContext(Dispatchers.IO) {
