@@ -41,6 +41,15 @@ class ConversationRegressionTest {
         assertEquals(setOf("tasks.list"), AgentPolicy.allowedTools(query))
         assertFalse(AgentPolicy.permits(ToolCall("tasks.create", mapOf("title" to "Estudar")), query))
     }
+    @Test fun textReviewAndExplanationsAreNotCalendarOrNoteCommands() {
+        for (text in listOf("Marca os erros neste texto", "Aponta os erros desta frase", "Lembra-me de como se resolve uma equação")) {
+            assertNull(text, AgentPolicy.writeTool(text))
+        }
+    }
+    @Test fun userNameCanReadAuthorizedMemoryButAssistantNameIsJustChat() {
+        assertEquals(setOf("memory.list"), AgentPolicy.allowedTools("Qual é o meu nome?"))
+        assertTrue(AgentPolicy.allowedTools("Qual é o teu nome?").isEmpty())
+    }
     @Test fun ordinaryPromptContainsNoToolSchemaOrTaskExample() {
         val prompt = ToolProtocol.instructions()
         assertTrue(prompt.contains("Chamas-te Atlas Personal"))

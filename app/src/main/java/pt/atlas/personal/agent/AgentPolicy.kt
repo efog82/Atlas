@@ -18,22 +18,25 @@ object AgentPolicy {
         val value = command(text)
         // Anchored commands: questions, explanations, quotations and negation do not confer permission.
         if (Regex("^(?:nao|nunca|cancela|cancelar|esquece|deixa estar)\\b").containsMatchIn(value)) return null
+        if (Regex("^lembra-me de (?:como|porque|por que|quem|o que|qual|quando)\\b").containsMatchIn(value)) return null
         if (Regex("^lembra-me de\\s+.+").containsMatchIn(value)) return "tasks.create"
         val verb = "(?:cria|criar|adiciona|adicionar|regista|registar|guarda|guardar|anota|anotar)"
         if (Regex("^$verb\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*(?:tarefa|tarefas)\\b").containsMatchIn(value)) return "tasks.create"
-        if (Regex("^(?:agenda|agendar|marca|marcar)\\s+.+").containsMatchIn(value) ||
+        if (Regex("^(?:agenda|agendar)\\s+.+").containsMatchIn(value) ||
+            Regex("^(?:marca|marcar)\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*(?:reuniao|evento|consulta|compromisso|encontro|lembrete)\\b").containsMatchIn(value) ||
             Regex("^$verb\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*(?:evento|compromisso|reuniao|agenda)\\b").containsMatchIn(value)) return "events.create"
         if (Regex("^(?:memoriza|memorizar|lembra-te que)\\s+.+").containsMatchIn(value) ||
             Regex("^$verb\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*memoria\\b").containsMatchIn(value)) return "memory.save"
         if (Regex("^$verb\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*diario\\b").containsMatchIn(value)) return "journal.create"
         if (Regex("^$verb\\s+(?:(?:uma?|o|a|na|no|em|minha|meu)\\s+)*(?:nota|notas|apontamento)\\b").containsMatchIn(value) ||
-            Regex("^(?:anota|anotar|aponta|apontar|toma nota de|tira nota de)\\s+.+").containsMatchIn(value)) return "notes.create"
+            Regex("^(?:anota|anotar|toma nota de|tira nota de)\\s+.+").containsMatchIn(value)) return "notes.create"
         return null
     }
     fun allowedTools(text: String): Set<String> {
         writeTool(text)?.let { return setOf(it) }
         ToolProtocol.routeRead(text)?.let { return setOf(it.tool) }
         val value = command(text)
+        if (value.trimEnd('?', '.', '!') in setOf("qual e o meu nome", "qual o meu nome", "como me chamo", "o que sabes sobre mim")) return setOf("memory.list")
         val reading = Regex("^(?:quais?|quando|que|o que|mostra|mostrar|lista|listar|consulta|consultar|procura|procurar|pesquisa|pesquisar|busca|buscar|ve|ver)\\b")
         if (!reading.containsMatchIn(value)) return emptySet()
         return buildSet {
