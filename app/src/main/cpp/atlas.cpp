@@ -194,7 +194,7 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_na
         const auto t = Clock::now();
         llama_token token = llama_sampler_sample(sampler, ctx, -1);
         if (stopped.load()) { finish_turn(true); return nullptr; }
-        llama_sampler_accept(sampler, token);
+        // llama_sampler_sample already accepts the sampled token in b6500.
         if (llama_vocab_is_eog(vocab, token)) { finish_turn(false); return nullptr; }
         std::vector<char> piece(256);
         int n = llama_token_to_piece(vocab, token, piece.data(), piece.size(), 0, true);

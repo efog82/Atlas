@@ -32,6 +32,7 @@ class GeneratedModelIntegrationTest {
                 assertFalse("${file.name}/${row.getString("id")}: thinking budget exhausted", view.thinking)
                 assertTrue("${file.name}: empty final answer", view.text.isNotBlank())
                 assertFalse(row.getBoolean("doubleBos"))
+                assertEquals(row.getInt("expectedAccepted"), row.getInt("samplerAccepted"))
                 for (token in listOf("<think>", "</think>", "<|im_start|>", "<|im_end|>", "<start_of_turn>", "<end_of_turn>", "<bos>", "<eos>")) {
                     assertFalse("Leaked $token", view.text.contains(token))
                 }

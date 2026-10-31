@@ -42,14 +42,17 @@ int main(int argc, char **argv) {
             if (tokens.size() + budget + 8 > cp.n_ctx) throw std::runtime_error("Context exceeds app limit");
             for (; generated < budget; ++generated) {
                 auto token = llama_sampler_sample(sampler.get(), ctx.get(), -1);
-                llama_sampler_accept(sampler.get(), token);
+                // Acceptance is performed inside llama_sampler_sample.
                 if (llama_vocab_is_eog(vocab, token)) { eog = true; break; }
                 raw += atlas::piece(vocab, token);
                 if (llama_decode(ctx.get(), llama_batch_get_one(&token, 1))) throw std::runtime_error("Decode failed");
             }
+            const int expected_accepted = tokens.size() + generated + (eog ? 1 : 0);
+            const int accepted = llama_perf_sampler(sampler.get()).n_sample;
+            if (accepted != expected_accepted) throw std::runtime_error("Sampler accepted a token more than once");
             results.push_back({{"id", request.at("id")}, {"prompt", rendered.prompt}, {"raw", raw}, {"forcedOpen", rendered.thinking_open},
                 {"reasoning", renderer.reasoning}, {"thinkingSwitch", renderer.supports_thinking}, {"thinking", request.at("thinking")},
-                {"tokens", generated}, {"eog", eog}, {"doubleBos", double_bos}, {"sampling", c}, {"architecture", [&] { char value[128] = {}; llama_model_meta_val_str(model.get(), "general.architecture", value, sizeof(value)); return std::string(value); }()},
+                {"tokens", generated}, {"samplerAccepted", accepted}, {"expectedAccepted", expected_accepted}, {"eog", eog}, {"doubleBos", double_bos}, {"sampling", c}, {"architecture", [&] { char value[128] = {}; llama_model_meta_val_str(model.get(), "general.architecture", value, sizeof(value)); return std::string(value); }()},
                 {"name", [&] { char value[512] = {}; llama_model_meta_val_str(model.get(), "general.name", value, sizeof(value)); return std::string(value); }()}});
             std::ofstream(argv[3]) << results.dump(2);
         }

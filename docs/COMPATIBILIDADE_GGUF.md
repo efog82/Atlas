@@ -24,7 +24,7 @@ São pontos de partida, não uma garantia de qualidade factual. O perfil genéri
 
 Qwen3 híbrido usa `enable_thinking` no template, sem acrescentar comandos ao texto do utilizador. O início é non-thinking para reduzir demora e consumo. Templates exclusivamente thinking/instruct determinam o modo permitido; não é prometida uma alternância que o próprio modelo não suporta. Um template que força pensamento aberto usa os parâmetros do modo thinking, mesmo com a opção global desligada.
 
-A aceitação dos tokens no sampler acompanha prompt e geração, incluindo o estado da penalização de repetição. A cache é comparada com os tokens do novo prompt renderizado; mudar template, modo ou histórico invalida o sufixo incompatível sem recriar o contexto desnecessariamente. A atualização usa a API de memória nova do llama.cpp, mantendo a invalidação segura após interrupção.
+O prompt é aceite explicitamente pelo sampler; cada token gerado é aceite uma única vez, implicitamente por `llama_sampler_sample` em b6500. Um teste de contagem deteta aceitação duplicada, que alteraria a janela da penalização de repetição. A revisão do corpo de `src/llama-sampling.cpp` foi necessária porque o exemplo no cabeçalho da API sugere uma chamada explícita redundante. A cache é comparada com os tokens do novo prompt renderizado; mudar template, modo ou histórico invalida o sufixo incompatível sem recriar o contexto desnecessariamente. A atualização usa a API de memória nova do llama.cpp, mantendo a invalidação segura após interrupção.
 
 ## Modo factual
 
