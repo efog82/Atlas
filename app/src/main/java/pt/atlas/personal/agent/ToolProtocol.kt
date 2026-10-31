@@ -119,7 +119,7 @@ object ToolProtocol {
 
     fun instructions(allowed: Set<String> = emptySet(), clockContext: String? = null): String {
         val chat = NormalChat.system + (clockContext?.let { "\n$it" } ?: "")
-        if (allowed.isEmpty()) return chat + "\nNeste pedido só deves conversar: não emitas chamadas de ferramentas nem propostas de registo."
+        if (allowed.isEmpty()) return chat
         val descriptions = mapOf(
             "tasks.create" to "tasks.create {title,date opcional,body opcional}",
             "events.create" to "events.create {title,date,end opcional,body opcional,recurrence opcional}",

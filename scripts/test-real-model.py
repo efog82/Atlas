@@ -31,16 +31,18 @@ source = (root / 'app/src/main/java/pt/atlas/personal/agent/NormalChat.kt').read
 prompt = textwrap.dedent(re.search(r'val system = """\n(.*?)\n\s*"""', source, re.S).group(1)).strip()
 system = out / 'system.txt'
 system.write_text(prompt)
-report = {'model': repo, 'revision': revision, 'sha256': digest, 'hardware': 'GitHub Linux x86 CPU; not Redmi/Android', 'responses': []}
+report = {'model': repo, 'revision': revision, 'sha256': digest, 'hardware': 'GitHub Linux x86 CPU; not Redmi/Android', 'sampling': {'top_k': 40, 'top_p': 0.9, 'temperature': 0.65, 'seed': 42}, 'responses': []}
 failed = False
 for question, markers in [('O que é o espiritismo?', ['espirit', 'doutrina', 'kardec', 'reencarn']), ('Como funciona a fotossíntese?', ['luz', 'solar', 'clorof', 'dioxido', 'carbono'])]:
-    cmd = [str(root / 'native/llama.cpp/build/bin/llama-cli'), '-m', str(model), '-t', '2', '-c', '2048', '-n', '180', '--temp', '0', '--seed', '42', '-cnv', '-st', '-sysf', str(system), '-p', question, '--no-display-prompt', '--simple-io', '--log-disable']
+    cmd = [str(root / 'native/llama.cpp/build/bin/llama-cli'), '-m', str(model), '-t', '2', '-c', '2048', '-n', '180', '--samplers', 'top_k;top_p;temperature', '--temp', '0.65', '--top-k', '40', '--top-p', '0.9', '--seed', '42', '-cnv', '-st', '-sysf', str(system), '-p', question, '--no-display-prompt', '--simple-io']
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=240)
     answer = result.stdout.strip()
     normalized = ''.join(c for c in unicodedata.normalize('NFD', answer.lower()) if not unicodedata.combining(c))
     passed = result.returncode == 0 and sum(marker in normalized for marker in markers) >= 2
     report['responses'].append({'question': question, 'answer': answer, 'stderr': result.stderr[-4000:], 'passed': passed})
     print(question, '\n', answer, '\nMeaningful-answer smoke:', passed, flush=True)
+    if not passed:
+        print('Runner stderr:', result.stderr[-4000:], flush=True)
     failed |= not passed
 (out / 'results.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
 raise SystemExit(1 if failed else 0)

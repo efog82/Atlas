@@ -89,4 +89,24 @@ class DatabaseAgentTest {
         assertTrue(db.dao().records().isEmpty())
     }
 
+    @Test fun computerReminderIsAbsentUntilConfirmedThenSurvivesReopen() = runBlocking {
+        val repository = AtlasRepository(db, ReminderScheduler(app, db.dao()))
+        val tools = AgentTools(repository)
+        val now = java.time.ZonedDateTime.now().withSecond(0).withNano(0)
+        val tomorrow = now.plusDays(1)
+        val request = "cria um lembrete amanhã às 21h para eu ligar o computador"
+        val proposal = (LocalRequests.reminder(request, now) as ReminderResolution.Ready).proposal
+        val read = LocalRead(Kind.EVENT, tomorrow.toLocalDate())
+        assertTrue(db.dao().records().isEmpty())
+        assertFalse(LocalReadFormatter.format(read, db.dao().records(), now).contains("ligar o computador"))
+        tools.confirm(proposal)
+        val saved = db.dao().record(proposal.record.id)!!
+        assertTrue(saved.reminder)
+        assertEquals("ligar o computador", saved.title)
+        assertTrue(LocalReadFormatter.format(read, db.dao().records(), now).contains("21:00 — ligar o computador"))
+        db.close(); open()
+        assertEquals(saved, db.dao().record(saved.id))
+        ReminderScheduler(app, db.dao()).cancel(saved.id)
+    }
+
 }
