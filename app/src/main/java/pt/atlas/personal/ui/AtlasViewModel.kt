@@ -138,7 +138,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val turns = mutableListOf(Turn("system", ToolProtocol.instructions()))
                 val history = repo.dao.messages(conversationId).filter { it.role in setOf("user", "assistant") }.takeLast(24)
-                turns += history.map { Turn(it.role, it.content) }
+                turns += history.map { historyTurn(it.role, it.content, it.createdAt) }
                 val routed = ToolProtocol.routeRead(text)
                 if (routed != null) {
                     val result = tools.read(routed)

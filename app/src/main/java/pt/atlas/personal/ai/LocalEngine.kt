@@ -54,7 +54,7 @@ class LocalEngine {
         stop()
         mutex.withLock { if (linked) nativeUnload(); modelBytes = 0; mutable.value = EngineStatus() }
     }
-    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (linked) nativeClearCache() } }
+    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (linked) { nativeClearCache(); refresh() } } }
     fun stop() {
         activeStop?.let { request ->
             request.set(true)
@@ -87,7 +87,7 @@ class LocalEngine {
             var lastEmission = 0L
             var lastRefresh = 0L
             var emitted = ""
-            withCancellationSignal(request) { try {
+            try { withCancellationSignal(request) {
                 currentCoroutineContext().ensureActive()
                 nativeResetStop()
                 // A Stop concurrent with reset cannot be lost: recheck the Kotlin request flag.
@@ -110,11 +110,13 @@ class LocalEngine {
                 if (request.get()) throw CancellationException("Interrompido")
                 val finalText = bytes.toString(Charsets.UTF_8.name())
                 if (finalText != emitted) emit(finalText)
-            } finally {
+            } } finally {
                 // No suspension: executes on the IO owner, even when the Job is cancelled.
-                nativeEnd(); refresh(); activeStop = null
-                mutable.update { it.copy(busy = false, stopping = false) }
-            } }
+                try { nativeEnd(); refresh() } finally {
+                    activeStop = null
+                    mutable.update { it.copy(busy = false, stopping = false) }
+                }
+            }
         }
     }.flowOn(Dispatchers.IO)
 }

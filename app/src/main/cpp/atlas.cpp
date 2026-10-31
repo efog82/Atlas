@@ -40,7 +40,7 @@ std::string utf8(JNIEnv *env, jstring value) {
     env->ReleaseStringChars(value, chars);
     return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(text);
 }
-void fail(JNIEnv *env, const std::string &s) { env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), s.c_str()); }
+void fail(JNIEnv *env, const std::string &s) { if (!env->ExceptionCheck()) env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), s.c_str()); }
 void clear_cache() { if (ctx) llama_kv_self_clear(ctx); cached.clear(); }
 void free_sampler() { if (sampler) { llama_sampler_free(sampler); sampler = nullptr; } }
 void release_context() { free_sampler(); if (ctx) llama_free(ctx); ctx = nullptr; cached.clear(); session.clear(); shape = {}; }
@@ -120,7 +120,7 @@ extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeLo
     } catch (const std::exception &e) { fail(env, e.what()); }
 }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeUnload(JNIEnv *, jobject) {
-    release_context(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr; phase = 0;
+    release_context(); if (model) llama_model_free(model); model = nullptr; vocab = nullptr; phase = 0; prompt.clear();
 }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeBegin(JNIEnv *env, jobject,
         jobjectArray jroles, jobjectArray jcontents, jstring session_id, jint context_tokens, jint max_tokens,
@@ -205,12 +205,16 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_na
         if (!decode(&token, 1, false)) return nullptr;
         ++generated;
         if (ttft_ms < 0) ttft_ms = millis(start);
-        auto bytes = env->NewByteArray(n); env->SetByteArrayRegion(bytes, 0, n, reinterpret_cast<const jbyte *>(piece.data()));
+        auto bytes = env->NewByteArray(n);
+        if (!bytes) { phase = 5; clear_cache(); free_sampler(); return nullptr; }
+        env->SetByteArrayRegion(bytes, 0, n, reinterpret_cast<const jbyte *>(piece.data()));
         return bytes;
     } catch (const std::exception &e) { phase = 5; clear_cache(); free_sampler(); total_ms = millis(start); fail(env, e.what()); return nullptr; }
 }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeStop(JNIEnv *, jobject) {
-    stop_ns.store(now_ns()); stopped.store(true, std::memory_order_relaxed);
+    int64_t expected = 0;
+    stop_ns.compare_exchange_strong(expected, now_ns()); // Preserve the first request, including the UI click.
+    stopped.store(true, std::memory_order_relaxed);
 }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeResetStop(JNIEnv *, jobject) { stop_ns.store(0); stopped.store(false); }
 extern "C" JNIEXPORT void JNICALL Java_pt_atlas_personal_ai_LocalEngine_nativeEnd(JNIEnv *, jobject) {
@@ -224,5 +228,7 @@ extern "C" JNIEXPORT jdoubleArray JNICALL Java_pt_atlas_personal_ai_LocalEngine_
         static_cast<double>(ctx ? llama_kv_self_used_cells(ctx) : 0), estimated_memory(), static_cast<double>(context_creations),
         static_cast<double>(shape.context), static_cast<double>(threads), static_cast<double>(batch_threads),
         static_cast<double>(shape.batch), static_cast<double>(shape.microbatch), setup_ms, stop_ms};
-    auto out = env->NewDoubleArray(19); env->SetDoubleArrayRegion(out, 0, 19, values); return out;
+    auto out = env->NewDoubleArray(19);
+    if (out) env->SetDoubleArrayRegion(out, 0, 19, values);
+    return out;
 }
