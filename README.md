@@ -4,9 +4,9 @@
 
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
-**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com testes JVM, lint e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41190383308) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41190383308/artifacts/13038955824).
+**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 23 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41207326535) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41207326535/artifacts/13045560637).
 
-Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. Ainda não houve execução num dispositivo Android nem inferência com GGUF: esses critérios permanecem por verificar. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
+Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão otimizada 0.2 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
 
 ## Funcionalidades no código
 
@@ -83,7 +83,7 @@ Exportar memórias em JSON é uma ação separada **sem encriptação**, com avi
 ```bash
 python3 scripts/check-project.py       # verificações estáticas, sem Android
 ./gradlew testDebugUnitTest            # testes JVM executados com sucesso no GitHub Actions
-./gradlew connectedDebugAndroidTest   # 8 testes instrumentados; Android ARM64 necessário
+./gradlew connectedDebugAndroidTest   # 11 testes instrumentados compilados; execução requer Android ARM64 e GGUF
 ```
 
 O teste de inferência procura um GGUF já importado. Sem ele fica **ignorado**, não aprovado. O teste de abertura pressupõe bloqueio da app desligado. Testes de Room/backup usam bases próprias. [Procedimento e resultados](docs/VALIDACAO.md).

@@ -1,6 +1,22 @@
 # Validação — 31 de outubro de 2026
 
-## Atualização: compilação concluída no GitHub Actions
+## Versão 0.2 — otimização offline (atualização mais recente)
+
+- Código compilado: `7c0518b370b8b9a7af0458b2c2296ea943528ba7`.
+- [Execução GitHub Actions 41207326535](https://github.com/efog82/Atlas/actions/runs/41207326535): **success**.
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
+- 23 testes JVM executados; teste host C++ da política de cache e sete verificações estáticas aprovados.
+- `verify-native-optimization.py` confirmou `-O3` efetivo nos comandos do compilador da ponte JNI e dos kernels CPU, incluindo no APK debug.
+- APK normal e APK de testes Android compilados. Os 11 testes instrumentados, incluindo três de KV/interrupção/timeout com GGUF, **não foram executados** no runner x86.
+- [APK 0.2 e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41207326535/artifacts/13045560637), 26 788 374 bytes.
+- SHA-256 do ZIP comunicado pelo GitHub: `32ed5b028787a7da2577db549a9bbe0df95c5647fc5bb789634eca045a5dc168`.
+- Sem medições de TTFT, tokens/s, RAM real, energia ou latência de interrupção no Redmi Note 10S. Há perfis, métricas e comparação local no próprio dispositivo para obter essa evidência.
+- Vulkan continua desativado; requisitos revistos no código oficial, estabilidade do driver Mali não ensaiada.
+- [Diagnóstico, configurações e percurso de teste](DESEMPENHO.md).
+
+Os registos seguintes são históricos das versões anteriores.
+
+## Atualização anterior: compilação concluída no GitHub Actions
 
 - Repositório publicado: https://github.com/efog82/Atlas
 - Commit compilado: `1a4208f2b391304641b5192175c89a33802d3786`.
