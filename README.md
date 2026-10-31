@@ -36,13 +36,7 @@ Requer um computador com acesso à rede para preparar as dependências da compil
    ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
    ```
 
-   O `gradlew` incluído é um **bootstrap Gradle 8.11.1**, não o wrapper Java gerado. Usa Gradle instalado ou obtém a distribuição oficial e verifica o SHA-256. Não inclui um JAR de wrapper que não foi possível obter neste ambiente. Para gerar o wrapper oficial após preparar dependências:
-
-   ```bash
-   ./gradlew wrapper --gradle-version 8.11.1 --distribution-type bin
-   ```
-
-   No Windows, executa `scripts/bootstrap-gradle.ps1`, adiciona a instalação ao PATH e usa Git Bash para `setup-native.sh`. O `gradlew.bat` usa Gradle do PATH. No Android Studio podes selecionar a instalação Gradle local produzida pelo bootstrap, sincronizar o projeto e usar **Build APK(s)**.
+   O wrapper oficial Gradle 8.11.1 está incluído (`gradlew`, `gradlew.bat` e `gradle/wrapper/gradle-wrapper.jar`), obtido da versão oficial `v8.11.1` do projeto Gradle. No Windows usa `gradlew.bat`. No Android Studio abre a pasta, sincroniza o projeto e usa **Build APK(s)**. Git Bash permite executar `setup-native.sh` no Windows. Os scripts de bootstrap separados são opcionais.
 
 5. Se o build terminar com sucesso, o APK fica em `app/build/outputs/apk/debug/app-debug.apk`.
 

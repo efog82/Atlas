@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 version=b5046
+expected_revision=74d4f5b041ad837153b0e90fc864b8290e01d8d5
 destination=native/llama.cpp
 if [ -d "$destination/.git" ]; then
     actual=$(git -C "$destination" describe --tags --exact-match)
@@ -11,6 +12,7 @@ else
     git -c http.connectTimeout=15 clone --depth 1 --branch "$version" https://github.com/ggml-org/llama.cpp.git "$destination"
 fi
 git -C "$destination" rev-parse HEAD > native/llama-revision.txt
+test "$(cat native/llama-revision.txt)" = "$expected_revision" || { echo "Revisão llama.cpp inesperada" >&2; exit 1; }
 mkdir -p app/src/main/assets/licenses
 cp "$destination/LICENSE" app/src/main/assets/licenses/llama.cpp.LICENSE.txt
 echo "llama.cpp $version preparado. Licença MIT em native/llama.cpp/LICENSE."

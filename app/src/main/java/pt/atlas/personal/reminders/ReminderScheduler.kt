@@ -80,11 +80,14 @@ class ReminderScheduler(private val context: Context, private val dao: AtlasDao)
 }
 
 class ReminderWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
-    override suspend fun doWork(): Result = try {
-        val app = applicationContext as AtlasApp
-        app.reminders.deliver(inputData.getString("id") ?: return Result.failure(), inputData.getLong("at", 0))
-        Result.success()
-    } catch (_: Exception) { Result.retry() }
+    override suspend fun doWork(): Result {
+        return try {
+            val app = applicationContext as AtlasApp
+            val id = inputData.getString("id") ?: return Result.failure()
+            app.reminders.deliver(id, inputData.getLong("at", 0))
+            Result.success()
+        } catch (_: Exception) { Result.retry() }
+    }
 }
 
 class ReminderReceiver : BroadcastReceiver() {
