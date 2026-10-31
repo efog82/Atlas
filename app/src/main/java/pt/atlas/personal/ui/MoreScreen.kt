@@ -139,7 +139,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         Slider(prefs.maxTokens.toFloat(), { vm.app.settings.update(prefs.copy(maxTokens = (it.toInt() / 64 * 64).coerceIn(64, 1024))) }, valueRange = 64f..1024f, steps = 14, enabled = !chat.generating) }
                     item { Text("Orçamento de memória: ${prefs.memoryMb} MB")
                         Slider(prefs.memoryMb.toFloat(), { vm.app.settings.update(prefs.copy(memoryMb = (it.toInt() / 512 * 512).coerceIn(512, 4096))) }, valueRange = 512f..4096f, steps = 6, enabled = !chat.generating) }
-                    item { Text("O orçamento é uma verificação preventiva aproximada; não limita o processo no sistema. Aumentar contexto ou modelo pode levar o Android a terminar a app por falta de RAM. Recarrega o modelo após alterar os limites.", style = MaterialTheme.typography.bodySmall) }
+                    item { Text("O orçamento é uma verificação preventiva aproximada; não limita o processo no sistema. Aumentar contexto ou modelo pode levar o Android a terminar a app por falta de RAM. Os limites aplicam-se ao próximo pedido; não precisas de recarregar os pesos do modelo.", style = MaterialTheme.typography.bodySmall) }
                     item { Text("Lembretes", style = MaterialTheme.typography.titleMedium) }
                     item { OutlinedButton(onClick = { notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }) { Text("Autorizar notificações") } }
                     item { OutlinedButton(onClick = {
