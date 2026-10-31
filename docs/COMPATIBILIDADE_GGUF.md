@@ -55,9 +55,9 @@ Os ensaios de CPU Linux não medem rapidez, RAM, energia, estabilidade do driver
 
 ## Resultados reais e limites factuais
 
-Na execução [41236824968](https://github.com/efog82/Atlas/actions/runs/41236824968), o build Android e a integração CPU passaram. [Respostas, prompts, hashes e relatórios](https://github.com/efog82/Atlas/actions/runs/41236824968/artifacts/13056181350).
+Na execução [41237557207](https://github.com/efog82/Atlas/actions/runs/41237557207), o build Android e a integração CPU passaram. [Respostas, prompts, hashes e relatórios](https://github.com/efog82/Atlas/actions/runs/41237557207/artifacts/13055952715).
 
-Foram feitas dez gerações reais: quatro Qwen3 (três non-thinking e uma thinking), três Gemma 3 e três Qwen2.5. O módulo JVM isolado executou sete testes de protocolo e um teste de integração que percorre todas as dez saídas. Não houve BOS duplicado nem fuga dos delimitadores testados; a resposta thinking foi apresentada como `19.` sem o bloco de raciocínio.
+Foram feitas dez gerações reais: quatro Qwen3 (três non-thinking e uma thinking), três Gemma 3 e três Qwen2.5. O módulo JVM isolado executou sete testes de protocolo e um teste de integração que percorre todas as dez saídas. Não houve BOS duplicado, aceitação duplicada de tokens pelo sampler nem fuga dos delimitadores testados; a resposta thinking foi apresentada como `19.` sem o bloco de raciocínio.
 
 A verificação de idioma classificou em português as nove respostas extensas. A resposta numérica `19.` ficou explicitamente como curta/não verificável; a classificação automática `en` não permite inferir o idioma de um número. Não se contam números como prova de português correto.
 
@@ -81,7 +81,7 @@ Não há medições físicas no Redmi. O tempo até ao primeiro token nas métri
 
 ## Fontes consultadas
 
-- [llama.cpp b6500 — chat.h](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.h), [chat.cpp](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.cpp), [minja](https://github.com/ggml-org/llama.cpp/blob/b6500/vendor/minja/chat-template.hpp) e [llama.h](https://github.com/ggml-org/llama.cpp/blob/b6500/include/llama.h).
+- [llama.cpp b6500 — chat.h](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.h), [chat.cpp](https://github.com/ggml-org/llama.cpp/blob/b6500/common/chat.cpp), [minja](https://github.com/ggml-org/llama.cpp/blob/b6500/vendor/minja/chat-template.hpp) e [llama.h](https://github.com/ggml-org/llama.cpp/blob/b6500/include/llama.h) e [implementação real de sampling](https://github.com/ggml-org/llama.cpp/blob/b6500/src/llama-sampling.cpp).
 - [Qwen3 oficial — modos e llama.cpp](https://github.com/QwenLM/Qwen3), [modelo e recomendações](https://huggingface.co/Qwen/Qwen3-0.6B), [template de referência](https://github.com/ggml-org/llama.cpp/blob/b6500/models/templates/Qwen-Qwen3-0.6B.jinja).
 - [Implementação oficial Gemma — valores de geração](https://github.com/google/gemma_pytorch/blob/main/gemma/model.py). A leitura da ficha original Gemma no Hugging Face devolveu HTTP 401 nesta sessão; não foram usados tokens nem contornada a autenticação. Os testes usam a conversão GGUF publicamente acessível do ggml-org.
 - [Gemma 3 — formato](https://ai.google.dev/gemma/docs/core/prompt-structure), [modelo e configuração](https://huggingface.co/google/gemma-3-1b-it), [termos Gemma](https://ai.google.dev/gemma/terms).

@@ -1,5 +1,7 @@
 # Atlas Personal
 
+**Versão 0.3.0:** Jinja do GGUF, Qwen3 thinking/non-thinking, amostragem por modelo, modo factual e histórico com papéis normalizados. Integração real Qwen3/Gemma 3/Qwen2.5, sem substituir respostas por factos pré-programados. [Problemas encontrados, alterações e resultados](docs/COMPATIBILIDADE_GGUF.md).
+
 **Versão 0.2.3:** lembretes interpretados localmente com confirmação, agenda/diário com dados reais, contexto de conversa revisto e diagnóstico de capturas. **Qualidade factual do chat ainda limitada** nos ensaios reais Qwen 0.5B/1.5B. [Alterações e resultados completos](docs/OPERACOES_LOCAIS.md).
 
 **Versão 0.2.2:** cabeçalho de data/hora retirado das mensagens de conversa e capturas de ecrã permitidas. [Correção e testes](docs/CORRECAO_HORA.md).
@@ -10,9 +12,9 @@
 
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
-**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 58 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41232075937) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41232075937/artifacts/13053794242).
+**Estado real:** Atlas 0.3.0 debug ARM64 compilado, lint e 65 testes JVM aprovados (um teste de integração externo ignorado nesta tarefa por não receber pesos). A tarefa isolada de integração executou oito testes, incluindo um que valida dez gerações reais com três GGUF; verificações de templates, BOS, contagem do sampler, tokens especiais, UTF-8 e idioma aprovadas. Estes testes não certificam a verdade de todas as respostas. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41237557207) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41237557207/artifacts/13056560100).
 
-Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão 0.2.3 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. O job `build` passou; o job de qualidade `real-model` falhou, mantendo o workflow global com falha: os modelos produziram erros factuais nos testes CPU Linux. [Relatório completo](docs/VALIDACAO.md).
+Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. Os 15 testes instrumentados foram compilados, mas não executados em Android/Redmi. Os modelos não estão no APK. Os ensaios reais foram em CPU Linux; Qwen3 0.6B e Qwen2.5 0.5B ainda erraram factos, enquanto Gemma 3 1B foi mais consistente nestes exemplos. [Respostas e evidência](https://github.com/efog82/Atlas/actions/runs/41237557207/artifacts/13055952715) · [Relatório completo](docs/VALIDACAO.md).
 
 ## Funcionalidades no código
 
@@ -37,7 +39,7 @@ Requer um computador com acesso à rede para preparar as dependências da compil
    bash scripts/setup-native.sh
    ```
 
-   O script obtém a tag `b5046` de `ggml-org/llama.cpp`, regista o commit efetivo em `native/llama-revision.txt` e copia a licença original para os assets. O código JNI usa tokenização, decode e sampling reais.
+   O script obtém a tag `b6500` de `ggml-org/llama.cpp`, regista o commit efetivo em `native/llama-revision.txt` e copia a licença original para os assets. O código JNI usa tokenização, decode e sampling reais. Se a pasta `native/llama.cpp` ainda contiver b5046, renomeia-a para preservar o clone antigo antes de executar o script; o script recusa misturar revisões.
 
 3. Configura `ANDROID_HOME` ou deixa o Android Studio criar `local.properties` com `sdk.dir`. Não publiques esse ficheiro.
 4. Compila e executa os testes JVM:
@@ -60,13 +62,13 @@ Versões fixadas: AGP 8.9.2, Kotlin/Compose compiler 2.1.20, KSP 2.1.20-1.0.32, 
    adb install -r app/build/outputs/apk/debug/app-debug.apk
    ```
 
-2. Abre **Mais → Modelos**. Recomendação configurada: **Qwen2.5-0.5B-Instruct, GGUF Q4_K_M**, pequeno e multilingue, incluindo português. A licença indicada pelo projeto Qwen é Apache 2.0. A ficha e o GGUF não puderam ser consultados/descarregados nesta sessão; a seleção não equivale a validação em hardware.
-3. Obtém o GGUF na [página oficial Qwen](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF), pelo navegador ou computador. Importa o ficheiro único `qwen2.5-0.5b-instruct-q4_k_m.gguf`. Fragmentos `-00001-of-...` devem ser unidos previamente no computador com `llama-gguf-split`.
+2. Abre **Mais → Modelos**. A app apresenta as opções e os limites efetivamente observados. Nos exemplos de CPU ensaiados, **Gemma 3 1B IT Q4_K_M** deu respostas mais consistentes. **Qwen3 0.6B Q8_0** passou os testes de formato/thinking, mas ainda errou factos; **Qwen2.5 0.5B Q4_K_M** também mostrou qualidade factual limitada. Isto não é uma medição de qualidade geral nem validação no Redmi.
+3. Obtém um dos GGUF pelos links da app: Gemma 3 (806 MB de pesos), Qwen3 oficial (639 MB) ou a opção Qwen2.5 mais pequena (491 MB). Os links Qwen3/Gemma estão fixados nas revisões testadas. Lê a licença: Apache 2.0 para Qwen e termos próprios Gemma. Usa navegador/computador ou USB e importa um único GGUF. Fragmentos `-00001-of-...` devem ser unidos previamente no computador com `llama-gguf-split`.
 4. Toca em **Importar GGUF** e depois **Carregar**. A importação calcula SHA-256; compara-o com o fornecedor para verificar a origem. O cabeçalho é validado antes da importação e a arquitetura pelo motor ao carregar. Outros GGUF dependem do suporte na versão fixada do motor e da RAM.
 5. Autoriza notificações e, para precisão horária, alarmes exatos em **Mais → Definições**.
 6. Ativa modo de avião e envia uma pergunta em **Atlas IA**. Sem modelo carregado, a app pede a instalação e não fabrica respostas.
 
-**Hardware:** nenhum dispositivo disponível para medir RAM, velocidade, aquecimento ou compatibilidade real. A interface sugere aproximadamente **1–1,5 GB de RAM livre** e contexto de 2048 tokens para o modelo recomendado; é uma estimativa. Confirma o tamanho real do GGUF na origem. Recomenda-se testar com pelo menos 4 GB de RAM. O orçamento configurado não é uma quota imposta ao processo; o Android pode terminar a app por falta de RAM. Não há aceleração GPU/NPU.
+**Hardware:** não há medições físicas de RAM, rapidez ou energia no Redmi nesta sessão. Os tamanhos acima são apenas dos pesos; contexto, buffers e sistema precisam de memória adicional. A verificação de RAM da app é preventiva, não uma quota do processo. Começa com contexto pequeno e modo non-thinking; o Android pode terminar processos por falta de RAM. GPU/NPU continuam desativadas.
 
 ## Ferramentas e estudo
 
@@ -89,12 +91,12 @@ Exportar memórias em JSON é uma ação separada **sem encriptação**, com avi
 ```bash
 python3 scripts/check-project.py       # verificações estáticas, sem Android
 ./gradlew testDebugUnitTest            # testes JVM executados com sucesso no GitHub Actions
-./gradlew connectedDebugAndroidTest   # 14 testes instrumentados compilados; execução requer Android ARM64 e GGUF
+./gradlew connectedDebugAndroidTest   # 15 testes instrumentados compilados; execução requer Android ARM64 e GGUF
 ```
 
 O teste de inferência procura um GGUF já importado. Sem ele fica **ignorado**, não aprovado. O teste de abertura pressupõe bloqueio da app desligado. Testes de Room/backup usam bases próprias. [Procedimento e resultados](docs/VALIDACAO.md).
 
-O [workflow Android](.github/workflows/android.yml) instala SDK/NDK, prepara llama.cpp, executa testes JVM/lint, compila e publica APK e relatórios no artefacto `atlas-personal-debug-arm64`. O runner x86 não executa testes instrumentados. Repositório GitHub: [efog82/Atlas](https://github.com/efog82/Atlas). Consulta [Actions](https://github.com/efog82/Atlas/actions) para acompanhar a compilação. Quando a execução terminar com sucesso, descarrega o artefacto `atlas-personal-debug-arm64`. A presença do workflow não significa que o APK já tenha sido compilado ou testado num dispositivo.
+O [workflow Android](.github/workflows/android.yml) instala SDK/NDK, prepara llama.cpp, executa testes JVM/lint, compila e publica APK e relatórios no artefacto `atlas-personal-debug-arm64`. O runner x86 não executa testes instrumentados. A tarefa adicional `model-integration` compila o renderizador/sampler partilhados, descarrega revisões GGUF fixadas, verifica SHA-256, executa gerações reais, valida-as no parser Kotlin da app e audita o idioma. Estes ensaios CPU não substituem testes Android/Redmi. Repositório GitHub: [efog82/Atlas](https://github.com/efog82/Atlas). Consulta [Actions](https://github.com/efog82/Atlas/actions) para acompanhar a compilação. Quando a execução terminar com sucesso, descarrega o artefacto `atlas-personal-debug-arm64`. Uma compilação bem-sucedida não demonstra execução em dispositivo.
 
 ## Ficheiros
 

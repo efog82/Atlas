@@ -1,6 +1,24 @@
 # Validação — 31 de outubro de 2026
 
-## Versão 0.2.3 — operações locais e diagnóstico do chat (mais recente)
+## Versão 0.3.0 — compatibilidade GGUF, thinking e modo factual (mais recente)
+
+- Commit compilado: `7231ca9460d12e0de6637a036492c2db6079494d`.
+- [Execução 41237557207](https://github.com/efog82/Atlas/actions/runs/41237557207): **build success; model-integration success**.
+- llama.cpp b6500, revisão `a7a98e0fffed794396b3fbad4dcdbbc184963645`, fixada e confirmada pelo script.
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
+- 65 testes JVM aprovados; um teste condicional de resultados GGUF externos ignorado na tarefa Android. Teste nativo de política de cache, sete verificações estáticas, lint e `-O3` nos kernels aprovados.
+- Na tarefa de integração isolada, sete testes de protocolo e um teste de integração com **dez gerações reais** aprovados; este último consome os resultados reais do renderizador/sampler partilhados e usa o parser Kotlin da app. Validados BOS, framing Jinja, tokens especiais, UTF-8 fragmentado, thinking/non-thinking e aceitação única de tokens.
+- Qwen3 0.6B Q8_0 oficial (4 gerações), Gemma 3 1B IT Q4_K_M (3) e Qwen2.5 0.5B Instruct Q4_K_M (3), revisões fixadas e SHA-256 verificado contra LFS.
+- Verificação de idioma aprovada nas nove respostas extensas em português; a resposta numérica `19.` ficou assinalada como curta/não verificável. Não foi contada como prova de idioma.
+- **Qualidade factual não certificada:** na revisão manual, Qwen3 rejeitou Lisboa mas indicou erradamente Brasília como capital de Espanha; Qwen2.5 aceitou a premissa falsa e confundiu fotossíntese com ADN/RNA. Gemma 3 corrigiu a premissa e produziu uma explicação mais consistente de fotossíntese nestes ensaios. Não se generaliza uma garantia de verdade a partir destes exemplos.
+- [APK 0.3.0 e relatórios](https://github.com/efog82/Atlas/actions/runs/41237557207/artifacts/13056560100), ZIP de 27 651 000 bytes.
+- SHA-256 do ZIP comunicado pelo GitHub: `85c27b9af0a2549db482aa2c5727e13e69db5e26658d301d67a3c07690ed9e81`.
+- [Prompts, respostas completas, identidades e relatórios de integração](https://github.com/efog82/Atlas/actions/runs/41237557207/artifacts/13055952715), ZIP de 28 816 bytes; SHA-256 `5f41497c9ba2192420029a96797aa50ee6a800603614d73c49ffc27e3ea89671`.
+- APK de testes Android compilado; os **15 testes instrumentados não foram executados** no Redmi/ARM64. Não há medições físicas de RAM, velocidade, energia ou ensaio de JNI no telemóvel nesta sessão. Os tamanhos GGUF são pesos em disco, não consumo de RAM.
+- A ficha Gemma original no Hugging Face devolveu HTTP 401. Os valores de geração foram conferidos na implementação oficial `google/gemma_pytorch`; a conversão GGUF pública ensaiada é do ggml-org. Não foram usados tokens nem contornada autenticação.
+- [Auditoria, ficheiros, decisões e limites](COMPATIBILIDADE_GGUF.md). Capturas e dados Room não foram alterados; mantêm-se os testes e fluxos anteriores de agenda, diário, tarefas, ferramentas e backups.
+
+## Versão 0.2.3 — operações locais e diagnóstico do chat (anterior)
 
 - Commit compilado: `5c7fd50eed922d44397d2c6e51a3831f8f28f480`.
 - [Execução 41232075937](https://github.com/efog82/Atlas/actions/runs/41232075937): **build success; real-model failure**. O estado global é falha devido à qualidade do modelo, não à compilação.
