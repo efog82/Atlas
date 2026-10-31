@@ -72,9 +72,13 @@ object ToolProtocol {
             dueAt = due, endAt = date("end"), reminder = due != null,
             recurrence = call.arguments["recurrence"] ?: "NONE")
         RecordRules.validate(record)
-        return Proposal(call.tool, record, if (kind == Kind.MEMORY)
-            "Autorizar esta memória permanente? O diário nunca é convertido em memória automaticamente."
-            else "Confirma o título, a data e o lembrete. Só será guardado depois da tua confirmação.")
+        val explanation = when (kind) {
+            Kind.MEMORY -> "Autorizar esta memória permanente? O diário nunca é convertido em memória automaticamente."
+            Kind.NOTE -> "Confirma o texto para guardar em Estudos → Apontamentos."
+            Kind.JOURNAL -> "Confirma o texto para guardar no Diário."
+            else -> "Confirma o título, a data e o lembrete. Só será guardado depois da tua confirmação."
+        }
+        return Proposal(call.tool, record, explanation)
     }
 
     /** Narrow, deterministic fallback for Portuguese reminders. Ambiguous dates are not guessed. */

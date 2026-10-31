@@ -70,6 +70,8 @@ class ConversationRegressionTest {
         assertEquals("preciso de comprar pão", proposal.record.body)
         assertNull(proposal.record.dueAt)
         assertFalse(proposal.record.reminder)
+        assertTrue(proposal.explanation.contains("Apontamentos"))
+        assertFalse(proposal.explanation.contains("lembrete"))
     }
     @Test fun protocolParametersAreNotExposedDuringStreaming() {
         for (text in listOf("{", "{\"tool\"", badTask, "```json\n$badTask", "<tool_call>$badTask")) {
