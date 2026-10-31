@@ -23,3 +23,7 @@ A classificação de ações é deliberadamente limitada a pedidos explícitos r
 Testes JVM de regressão cobrem perguntas de identidade, ações antigas, tipos de registo, negação/citações, consultas, prompts sem ferramentas, notas, parâmetros durante streaming, conversas antigas, cancelamentos persistidos, confirmações e apresentação do histórico. Testes Android adicionais verificam que confirmar uma nota não cria tarefa/evento e que o cancelamento permanece depois de reabrir Room.
 
 No Redmi, testar na mesma conversa afetada: “anota comprar pão” → Cancelar → “como te chamas?” → outra pergunta comum. Não deve aparecer um cartão de registo. Repetir depois de fechar/reabrir a app. Verificar que pedir explicitamente uma tarefa ou nota continua a apresentar apenas o tipo correto para confirmação. Os testes com geração real no Redmi continuam a exigir o dispositivo e o GGUF instalado.
+
+## Resultado desta entrega
+
+[Execução GitHub Actions 41219095049](https://github.com/efog82/Atlas/actions/runs/41219095049) aprovada: 41 testes JVM, teste nativo de cache, lint, verificações estáticas e de otimização, APK normal e APK de testes Android compilados. [Descarregar APK 0.2.1 e relatórios](https://github.com/efog82/Atlas/actions/runs/41219095049/artifacts/13049640856). Os 13 testes instrumentados não foram executados neste ambiente. Não houve ensaio de geração com o Qwen no Redmi nesta sessão.

@@ -1,6 +1,17 @@
 # Validação — 31 de outubro de 2026
 
-## Versão 0.2 — otimização offline (atualização mais recente)
+## Versão 0.2.1 — conversa, notas e cancelamento (mais recente)
+
+- Commit compilado: `c9d80a84dbb65974354d1e7feee515b783ae0aab`.
+- [Execução 41219095049](https://github.com/efog82/Atlas/actions/runs/41219095049): **success**.
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
+- 41 testes JVM, teste nativo de cache, sete verificações estáticas e verificação de `-O3` aprovados.
+- 13 testes Android compilados, incluindo persistência do cancelamento e nota sem tarefa/evento; não executados no runner x86.
+- [APK 0.2.1 e relatórios](https://github.com/efog82/Atlas/actions/runs/41219095049/artifacts/13049640856), ZIP de 26 801 967 bytes.
+- SHA-256 comunicado pelo GitHub: `8a7f4592b6433c4b388736595df86b10ea18c91aa86dd35c09ab307796e3166d`.
+- [Correção e percurso de regressão no Redmi](CORRECAO_CONVERSA.md). A geração com Qwen no dispositivo não foi executada nesta sessão.
+
+## Versão 0.2 — otimização offline (anterior)
 
 - Código compilado: `7c0518b370b8b9a7af0458b2c2296ea943528ba7`.
 - [Execução GitHub Actions 41207326535](https://github.com/efog82/Atlas/actions/runs/41207326535): **success**.

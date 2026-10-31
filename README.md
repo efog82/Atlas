@@ -1,12 +1,14 @@
 # Atlas Personal
 
+**Versão 0.2.1:** corrigidas propostas indevidas em conversa e repetição de ações canceladas, incluindo conversas antigas. [Diagnóstico e testes](docs/CORRECAO_CONVERSA.md).
+
 **Versão 0.2:** contexto persistente, KV cache por conversa, interrupção dentro do grafo CPU, perfis e comparação local com métricas. [Análise e testes de desempenho](docs/DESEMPENHO.md). Não há resultados de velocidade do Redmi inventados.
 
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
-**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 23 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41207326535) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41207326535/artifacts/13045560637).
+**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 41 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41219095049) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41219095049/artifacts/13049640856).
 
-Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão otimizada 0.2 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
+Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão 0.2.1 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
 
 ## Funcionalidades no código
 
@@ -83,7 +85,7 @@ Exportar memórias em JSON é uma ação separada **sem encriptação**, com avi
 ```bash
 python3 scripts/check-project.py       # verificações estáticas, sem Android
 ./gradlew testDebugUnitTest            # testes JVM executados com sucesso no GitHub Actions
-./gradlew connectedDebugAndroidTest   # 11 testes instrumentados compilados; execução requer Android ARM64 e GGUF
+./gradlew connectedDebugAndroidTest   # 13 testes instrumentados compilados; execução requer Android ARM64 e GGUF
 ```
 
 O teste de inferência procura um GGUF já importado. Sem ele fica **ignorado**, não aprovado. O teste de abertura pressupõe bloqueio da app desligado. Testes de Room/backup usam bases próprias. [Procedimento e resultados](docs/VALIDACAO.md).
