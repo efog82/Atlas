@@ -1,0 +1,65 @@
+package pt.atlas.personal
+
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.runner.RunWith
+import pt.atlas.personal.data.*
+import pt.atlas.personal.agent.*
+import pt.atlas.personal.reminders.ReminderScheduler
+import java.util.UUID
+
+@RunWith(AndroidJUnit4::class)
+class DatabaseAgentTest {
+    private val app = ApplicationProvider.getApplicationContext<AtlasApp>()
+    private val name = "test-${UUID.randomUUID()}.db"
+    private lateinit var db: AtlasDatabase
+    @Before fun open() { db = Room.databaseBuilder(app, AtlasDatabase::class.java, name).build() }
+    @After fun clean() { db.close(); app.deleteDatabase(name) }
+
+    @Test fun recordsSurviveClosingAndReopeningDatabase() = runBlocking {
+        val journal = Record(kind = Kind.JOURNAL, title = "Reflexão", body = "Texto privado", tags = "estudo")
+        db.dao().save(journal)
+        db.close(); open()
+        assertEquals(journal, db.dao().record(journal.id))
+        assertEquals(1, db.dao().search(searchPattern("privado"), listOf(Kind.JOURNAL)).size)
+        assertEquals(0, db.dao().byKind(Kind.MEMORY).size)
+    }
+    @Test fun creationOnlyOccursAfterConfirmationAndReadsCannotWrite() = runBlocking {
+        val repository = AtlasRepository(db, ReminderScheduler(app, db.dao()))
+        val tools = AgentTools(repository)
+        val proposal = ToolProtocol.proposal(ToolCall("tasks.create", mapOf("title" to "Estudar")))
+        assertTrue(db.dao().records().isEmpty())
+        tools.read(ToolCall("tasks.list", emptyMap()))
+        assertTrue(db.dao().records().isEmpty())
+        tools.confirm(proposal)
+        assertEquals("Estudar", db.dao().byKind(Kind.TASK).single().title)
+        tools.confirm(proposal) // stable proposal UUID makes repeated confirmation idempotent
+        assertEquals(1, db.dao().byKind(Kind.TASK).size)
+        repository.complete(proposal.record)
+        assertTrue(db.dao().record(proposal.record.id)!!.done)
+        repository.delete(proposal.record)
+        assertNull(db.dao().record(proposal.record.id))
+    }
+    @Test fun deletingDocumentAndConversationCascadesOnlyTheirChildren() = runBlocking {
+        val document = Record(kind = Kind.DOCUMENT, title = "Livro")
+        val section = Section(documentId = document.id, page = 1, text = "Conteúdo")
+        val conversation = Conversation()
+        db.dao().save(document); db.dao().saveSections(listOf(section))
+        db.dao().saveConversation(conversation)
+        db.dao().saveMessage(Message(conversationId = conversation.id, role = "user", content = "Olá"))
+        db.dao().deleteRecord(document.id)
+        assertTrue(db.dao().allSections().isEmpty())
+        assertEquals(1, db.dao().allMessages().size)
+        db.dao().deleteConversation(conversation.id)
+        assertTrue(db.dao().allMessages().isEmpty())
+    }
+    @Test fun literalSearchDoesNotTreatUserWildcardsAsSqlWildcards() = runBlocking {
+        db.dao().save(Record(kind = Kind.NOTE, title = "100% real"))
+        db.dao().save(Record(kind = Kind.NOTE, title = "1000 real"))
+        assertEquals(1, db.dao().search(searchPattern("100%"), listOf(Kind.NOTE)).size)
+    }
+}

@@ -1,0 +1,3 @@
+Atlas Personal utiliza componentes AndroidX, Kotlin, kotlinx.coroutines e PDFBox Android/Apache PDFBox sob Apache License 2.0.
+llama.cpp/ggml é utilizado sob MIT; a licença original é copiada para licenses/llama.cpp.LICENSE.txt durante a preparação da compilação.
+Os pesos de modelos de linguagem não são distribuídos neste APK. Consulta a licença do modelo antes de o importar.

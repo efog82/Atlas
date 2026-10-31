@@ -1,0 +1,62 @@
+# Validação — 31 de outubro de 2026
+
+## Executado neste ambiente
+
+- `python3 scripts/check-project.py`: **7 verificações estáticas aprovadas**: XML, permissões no manifesto fonte, símbolos JNI, ficheiros/testes, configuração Android/ABI, entrada de confirmação e workflow.
+- `bash -n gradlew scripts/setup-native.sh scripts/bootstrap-gradle.sh`: sintaxe shell aprovada.
+- Ambiente: Java runtime 21 presente; SDK/NDK Android, CMake, Gradle, compilador Kotlin, dispositivo Android e modelo GGUF não encontrados.
+- `./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug`: **não iniciou a compilação**. Bootstrap falhou com `curl: (7) Failed to connect to proxy port 8080`. Exit code 7.
+- `bash scripts/setup-native.sh`: **falhou** ao obter a biblioteca oficial com o mesmo erro de proxy. Exit code 128 do Git.
+- Não há remote GitHub configurado nem workflow executado.
+
+Estas verificações não demonstram compilação Kotlin/C++, correção de Room em Android, renderização Compose, entrega de notificações ou inferência. Não substituem os testes funcionais.
+
+## Testes escritos, não executados
+
+**17 testes JVM:** interpretação de lembretes, rejeição de chamadas inválidas/ambiguidades, autorização de memória, datas passadas/mudança de hora, recorrências, pesquisa literal, backup round-trip, aleatoriedade, integridade e palavra-passe errada.
+
+**8 testes Android:** persistência ao reabrir Room; confirmação e operações de tarefas; cascatas; pesquisa literal; backup/restore e falha sem alteração; abertura; ausência da permissão de Internet; geração real com GGUF instalado. Alguns testes agregam várias operações.
+
+`LocalInferenceTest` fica ignorado se não houver modelo. Um resultado ignorado não satisfaz o critério de inferência funcional.
+
+## Critérios obrigatórios
+
+| Critério | Código | Evidência nesta sessão |
+|---|---|---|
+| Abre em Android 13 | API 33+, Activity e Compose | Não executado |
+| Agenda, diário e tarefas funcionais | CRUD, ecrãs, recorrências/notificações | Não executado |
+| Base persiste registos | Room e transações | Não executado em Android |
+| Respostas reais por GGUF local | JNI, tokenização, decode e sampling | Não compilado nem executado |
+| Assistente consulta dados | Ferramentas e resultados locais citados | Não executado |
+| Cria tarefa após confirmação | Proposta, validação e confirmação | Não executado |
+| Offline verificável | Sem INTERNET no manifesto fonte; teste escrito | Fonte verificada, APK/dispositivo não verificados |
+| Compilável no Android Studio | Gradle/CMake e preparação | Build bloqueado antes de começar |
+
+**A entrega não está validada como concluída pelos critérios obrigatórios.** É necessário compilar, corrigir eventuais incompatibilidades detetadas pelo compilador e executar testes e percurso abaixo em hardware adequado.
+
+## Percurso de aceitação num Android ARM64
+
+1. Preparar dependências e compilar conforme README. Guardar revisão llama.cpp e relatórios.
+2. Instalar num Android 13 ARM64. Criar tarefa, evento, diário, memória autorizada e apontamento. Fechar à força/reabrir e confirmar persistência.
+3. Editar/concluir tarefa, cancelar e confirmar eliminações. Criar eventos diários/semanais/mensais e verificar as três vistas, mudança de hora e fim do mês.
+4. Autorizar notificações/alarmes exatos. Agendar um lembrete para minutos depois. Editar/apagar outro e confirmar ausência de notificação antiga. Repetir após reinício e com WorkManager, admitindo atrasos Android.
+5. Importar GGUF, conferir tamanho/SHA-256 com a origem, carregar e medir RAM/tempo até primeiro token. Ativar modo de avião e gerar texto novo. Interromper, enviar outra mensagem, descarregar e recarregar. Confirmar erro recuperável para ficheiro inválido.
+6. Pedir `Quais são as minhas tarefas?`. Comparar os dados recuperados com Room e distinguir fontes de texto gerado. Pesquisar no diário e nos documentos.
+7. Pedir `Atlas, lembra-me de estudar amanhã às 20h.`. Antes da confirmação não deve existir tarefa. Cancelar e verificar ausência. Repetir, confirmar e verificar tarefa/lembrete reais.
+8. Importar TXT/PDF, pesquisar frase conhecida, abrir página/secção, pedir resumo e iniciar revisão. Conferir referências e respostas do modelo.
+9. Exportar backup, alterar dados e tentar restaurar com palavra-passe errada: dados não mudam. Restaurar corretamente e comparar. Confirmar que o diário não virou memória permanente.
+10. Ativar bloqueio, sair/reentrar e desbloquear. Repetir com temas e rotação. Confirmar UI responsiva durante inferência e comportamento com pouca RAM.
+11. Com modelo importado e bloqueio desligado, executar `./gradlew connectedDebugAndroidTest`. Registar testes executados/ignorados e Android/SoC/RAM.
+
+## Limitações atuais
+
+- Nenhum hardware foi medido. As estimativas de RAM não são resultados de testes.
+- CPU ARM64; sem GPU/NPU, OCR, calendários de outras apps ou sincronização externa.
+- Edição/eliminação de recorrências por série, sem exceções individuais ou RRULE arbitrário. Eventos de vários dias não são repartidos em cada célula do calendário.
+- Importação até 20 MB, PDF até 300 páginas/4 milhões de caracteres, TXT até 4 MB. Backup até 64 MB serializados; GGUF até 4 GB e sujeito à RAM.
+- Contexto antigo removido por mensagens completas. Sem resumo automático da conversa. Uma mensagem ou resultado isolado que exceda o contexto é rejeitado com erro.
+- Modelos pequenos podem falhar português, ferramentas e avaliação de estudo. O interpretador determinístico cobre comandos explícitos e o padrão limitado de lembrete documentado.
+- Propostas pendentes não sobrevivem à morte do processo; é necessário refazer e confirmar. Pedidos/respostas concluídas persistem. A geração para ao sair da Activity; não há geração em serviço de background.
+- Notificações exigem permissão; WorkManager pode atrasar. Lembretes únicos que passaram com o dispositivo desligado não são recriados retroativamente.
+- Room sem SQLCipher; usa isolamento/proteção Android. Biometria bloqueia interface, backups têm encriptação própria.
+- APK apenas `arm64-v8a`; emuladores x86 não são alvo de suporte.
