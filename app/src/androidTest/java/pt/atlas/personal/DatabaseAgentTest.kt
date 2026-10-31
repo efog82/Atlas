@@ -127,9 +127,15 @@ class DatabaseAgentTest {
         knowledge.cache(page.copy(revision = 23, text = "As plantas fazem fotossíntese."), onlyExisting = true)
         assertEquals(privateEntry, db.dao().record(privateEntry.id))
         assertEquals(1, db.dao().sections(record.id).size)
+        assertNull(knowledge.cache(page, onlyExisting = true)) // an older response cannot roll back revision 23
+        assertEquals(23L, pt.atlas.personal.knowledge.SourceMeta.parse(db.dao().record(record.id)!!.body)!!.revision)
         db.dao().deleteRecord(record.id)
         assertNull(knowledge.cache(page, onlyExisting = true))
         assertNull(db.dao().record(record.id))
+        val collision = privateEntry.copy(id = record.id)
+        db.dao().save(collision)
+        assertNull(knowledge.cache(page))
+        assertEquals(collision, db.dao().record(record.id))
     }
 
 }

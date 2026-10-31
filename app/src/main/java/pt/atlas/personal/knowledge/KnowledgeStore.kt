@@ -20,6 +20,9 @@ class KnowledgeStore(private val app: AtlasApp, private val wiki: WikiApi, priva
         return database.withTransaction {
             val previous = dao.record(id)
             if (onlyExisting && previous == null) return@withTransaction null
+            if (previous != null && previous.kind != Kind.SOURCE) return@withTransaction null
+            val oldRevision = previous?.let { SourceMeta.parse(it.body)?.revision }
+            if (oldRevision != null && oldRevision > page.revision) return@withTransaction null
             val now = System.currentTimeMillis()
             val meta = SourceMeta(page.pageId, "https://pt.wikipedia.org/w/index.php?oldid=${page.revision}", page.revision, page.revisionAt, now, textHash(page.text))
             val record = Record(id = id, kind = Kind.SOURCE, title = page.title.take(200), body = meta.encode(), category = "Wikipédia · português",

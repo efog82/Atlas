@@ -185,7 +185,7 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                         repo.dao.saveMessage(Message(conversationId = conversationId, role = "system", content = "A fonte online atual é enciclopédica. Não tenho um serviço de meteorologia, notícias ou cotações em tempo real para confirmar esse pedido. Não vou apresentar um artigo geral como informação atual."))
                         return@launch
                     }
-                    mutableChat.value = mutableChat.value.copy(partial = "A procurar fontes locais…")
+                    mutableChat.value = mutableChat.value.copy(partial = "A procurar fontes…")
                     val lookup = if (publicQuery != null) {
                         val saved = app.knowledge.local(publicQuery.text)
                         if (saved.isNotEmpty() || !settings.value.onlineEnabled || !app.hasInternet()) KnowledgeLookup(saved)
