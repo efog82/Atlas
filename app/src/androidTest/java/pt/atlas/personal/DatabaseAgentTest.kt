@@ -114,6 +114,8 @@ class DatabaseAgentTest {
         var knowledge = pt.atlas.personal.knowledge.KnowledgeStore(app, api, db)
         val privateEntry = Record(kind = Kind.JOURNAL, title = "Privado", body = "Fotossíntese no meu diário privado")
         db.dao().save(privateEntry)
+        db.dao().save(Record(kind = Kind.MEMORY, title = "Preferências", body = "Estudar de manhã"))
+        assertTrue(knowledge.local("Diário de Anne Frank", allowPersonal = false).isEmpty())
         val page = pt.atlas.personal.knowledge.WikiPage(10, "Fotossíntese", "A fotossíntese utiliza luz nas plantas.", 22, "2026-10-31T09:00:00Z")
         val record = knowledge.cache(page)!!
         assertEquals(Kind.SOURCE, record.kind)

@@ -34,13 +34,13 @@ class KnowledgeStore(private val app: AtlasApp, private val wiki: WikiApi, priva
         }
     }
 
-    suspend fun local(question: String): List<Evidence> = withContext(Dispatchers.Default) {
+    suspend fun local(question: String, allowPersonal: Boolean = true): List<Evidence> = withContext(Dispatchers.Default) {
         if (KnowledgeIntent.clock(question)) {
             val now = ZonedDateTime.now()
             val value = now.format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-uuuu HH:mm:ss XXX")) + " · " + now.zone.id
             return@withContext listOf(Evidence("device-clock", "Relógio do telemóvel", value, "Hora configurada no dispositivo; não verificada online", true))
         }
-        val privateAllowed = app.settings.state.value.autoPersonal && KnowledgeIntent.personal(question)
+        val privateAllowed = allowPersonal && app.settings.state.value.autoPersonal && KnowledgeIntent.personal(question)
         val kinds = listOf(Kind.NOTE) + if (privateAllowed) listOf(Kind.JOURNAL, Kind.MEMORY, Kind.TASK, Kind.EVENT) else emptyList()
         val candidates = mutableListOf<Evidence>()
         val records = mutableMapOf<String, Record?>()

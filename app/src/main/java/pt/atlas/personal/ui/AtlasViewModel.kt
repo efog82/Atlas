@@ -187,14 +187,14 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     mutableChat.value = mutableChat.value.copy(partial = "A procurar fontes…")
                     val lookup = if (publicQuery != null) {
-                        val saved = app.knowledge.local(publicQuery.text)
+                        val saved = app.knowledge.local(publicQuery.text, allowPersonal = false)
                         if (saved.isNotEmpty() || !settings.value.onlineEnabled || !app.hasInternet()) KnowledgeLookup(saved)
                         else try {
                             val pages = app.wiki.search(publicQuery)
                             pages.forEach { app.knowledge.cache(it) }
-                            KnowledgeLookup(app.knowledge.local(publicQuery.text), networkUsed = true)
+                            KnowledgeLookup(app.knowledge.local(publicQuery.text, allowPersonal = false), networkUsed = true)
                         } catch (cancel: CancellationException) { throw cancel }
-                        catch (_: Exception) { KnowledgeLookup(app.knowledge.local(publicQuery.text), "A pesquisa online falhou; foram mantidas as fontes locais.") }
+                        catch (_: Exception) { KnowledgeLookup(app.knowledge.local(publicQuery.text, allowPersonal = false), "A pesquisa online falhou; foram mantidas as fontes locais.") }
                     } else if (KnowledgeIntent.followUp(text)) {
                         val previous = repo.dao.messages(conversationId).asReversed().firstNotNullOfOrNull { msg -> Grounding.parseReceipt(msg.content)?.map { it.second } }
                         KnowledgeLookup(previous.orEmpty().filter { settings.value.autoPersonal || !it.private })
