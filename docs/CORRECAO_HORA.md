@@ -14,6 +14,10 @@ O helper `historyTurn` acrescentava `[Data/hora local deste pedido: ...]` ao fim
 
 ## Validação
 
-Os testes JVM cobrem mensagens sem metadados, relógio só em contexto temporal, cabeçalhos com/sem parênteses e com espaços, streaming parcial, preservação da resposta após a hora, datas legítimas e recuperação de conversas antigas sem alterar os dados guardados. Há uma verificação instrumentada de que a janela não tem `FLAG_SECURE`.
+Os testes JVM cobrem mensagens sem metadados, relógio só em contexto temporal, cabeçalhos com/sem colchetes e com espaços, streaming parcial, preservação da resposta após a hora, datas legítimas e recuperação de conversas antigas sem alterar os dados guardados. Há uma verificação instrumentada de que a janela não tem `FLAG_SECURE`.
 
 No Redmi: abrir a mesma conversa, enviar “Olá” e “Como te chamas?”, verificar que não aparece o cabeçalho e fazer uma captura com Power + Volume Baixo. Repetir após fechar/reabrir. Pedir “Que horas são?” e um lembrete para confirmar que a referência temporal necessária continua disponível. A captura e a geração real no Redmi exigem verificação no dispositivo; não são demonstradas pela compilação no runner x86.
+
+## Resultado da entrega
+
+[GitHub Actions 41224681530](https://github.com/efog82/Atlas/actions/runs/41224681530) aprovado: 51 testes JVM, lint, teste nativo de cache, verificações estáticas e de otimização, APK normal e de testes Android compilados. [Descarregar APK 0.2.2](https://github.com/efog82/Atlas/actions/runs/41224681530/artifacts/13051591220). Os testes instrumentados e as capturas reais no Redmi não foram executados neste ambiente.

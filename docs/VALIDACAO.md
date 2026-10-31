@@ -1,6 +1,16 @@
 # Validação — 31 de outubro de 2026
 
-## Versão 0.2.1 — conversa, notas e cancelamento (mais recente)
+## Versão 0.2.2 — relógio no chat e capturas de ecrã (mais recente)
+
+- Commit compilado: `22ee56ec525a73b83f19bbf39988176cd88992e3`.
+- [Execução 41224681530](https://github.com/efog82/Atlas/actions/runs/41224681530): **success**.
+- 51 testes JVM, lint, teste nativo de cache, sete verificações estáticas e verificação de otimização dos kernels aprovados.
+- APK normal e APK de testes Android compilados; os 14 testes instrumentados, incluindo a flag da janela para capturas, não foram executados no runner x86.
+- [APK 0.2.2 e relatórios](https://github.com/efog82/Atlas/actions/runs/41224681530/artifacts/13051591220), ZIP de 26 805 623 bytes.
+- SHA-256 do ZIP comunicado pelo GitHub: `be0e26fb0d062e952185e5045b356be43ef158ecf8dfef1fb767797d3917ba57`.
+- Sem teste físico de captura nem geração Qwen no Redmi nesta sessão. [Diagnóstico e percurso de aceitação](CORRECAO_HORA.md).
+
+## Versão 0.2.1 — conversa, notas e cancelamento (anterior)
 
 - Commit compilado: `c9d80a84dbb65974354d1e7feee515b783ae0aab`.
 - [Execução 41219095049](https://github.com/efog82/Atlas/actions/runs/41219095049): **success**.
