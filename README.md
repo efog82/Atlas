@@ -1,5 +1,7 @@
 # Atlas Personal
 
+**Versão 0.2.3:** lembretes interpretados localmente com confirmação, agenda/diário com dados reais, contexto de conversa revisto e diagnóstico de capturas. **Qualidade factual do chat ainda limitada** nos ensaios reais Qwen 0.5B/1.5B. [Alterações e resultados completos](docs/OPERACOES_LOCAIS.md).
+
 **Versão 0.2.2:** cabeçalho de data/hora retirado das mensagens de conversa e capturas de ecrã permitidas. [Correção e testes](docs/CORRECAO_HORA.md).
 
 **Versão 0.2.1:** corrigidas propostas indevidas em conversa e repetição de ações canceladas, incluindo conversas antigas. [Diagnóstico e testes](docs/CORRECAO_CONVERSA.md).
@@ -8,9 +10,9 @@
 
 Aplicação Android nativa para organização pessoal e conversas com um modelo GGUF local. Kotlin, Compose/Material 3, MVVM, StateFlow, Room, WorkManager, AlarmManager e JNI/llama.cpp. Android 13+ (API 33), exclusivamente ARM64.
 
-**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 51 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41224681530) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41224681530/artifacts/13051591220).
+**Estado real:** APK debug ARM64 compilado com sucesso no GitHub Actions, com 58 testes JVM, testes nativos de cache, lint, verificação de kernels -O3 e sete verificações estáticas aprovados. [Execução validada](https://github.com/efog82/Atlas/actions/runs/41232075937) · [Descarregar APK e relatórios (ZIP)](https://github.com/efog82/Atlas/actions/runs/41232075937/artifacts/13053794242).
 
-Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão 0.2.2 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. [Relatório completo](docs/VALIDACAO.md).
+Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. A versão 0.2.3 ainda precisa de ensaio no Redmi/Android ARM64 com GGUF instalado; os testes instrumentados não foram executados pelo runner x86. O modelo não está incluído no APK. O job `build` passou; o job de qualidade `real-model` falhou, mantendo o workflow global com falha: os modelos produziram erros factuais nos testes CPU Linux. [Relatório completo](docs/VALIDACAO.md).
 
 ## Funcionalidades no código
 

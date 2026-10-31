@@ -1,6 +1,19 @@
 # Validação — 31 de outubro de 2026
 
-## Versão 0.2.2 — relógio no chat e capturas de ecrã (mais recente)
+## Versão 0.2.3 — operações locais e diagnóstico do chat (mais recente)
+
+- Commit compilado: `5c7fd50eed922d44397d2c6e51a3831f8f28f480`.
+- [Execução 41232075937](https://github.com/efog82/Atlas/actions/runs/41232075937): **build success; real-model failure**. O estado global é falha devido à qualidade do modelo, não à compilação.
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
+- 58 testes JVM, teste nativo de cache, lint, sete verificações estáticas e verificação de kernels `-O3` aprovados.
+- APK normal e APK de testes Android compilados. Os 15 testes instrumentados não foram executados em Android/Redmi nesta sessão.
+- [APK 0.2.3 e relatórios](https://github.com/efog82/Atlas/actions/runs/41232075937/artifacts/13053794242), ZIP de 26 820 677 bytes.
+- SHA-256 do ZIP comunicado pelo GitHub: `d6f6e5fb6acea8403764fdd3110c2e98e656463a0a63c57463d1a210ac4f0884`.
+- Inferência GGUF real executada em CPU Linux com llama.cpp b5046: 12 respostas 0.5B e seis respostas 1.5B, pesos verificados contra SHA-256 LFS oficial. O modelo 0.5B falhou os critérios de conceitos nas 12 respostas. O 1.5B passou a verificação superficial de conceitos, mas a revisão humana identificou erros factuais. Não considerar a qualidade geral do chat resolvida.
+- [Respostas reais e modelos](https://github.com/efog82/Atlas/actions/runs/41232075937/artifacts/13053699828) · [Alterações, resultados e ensaio no dispositivo](OPERACOES_LOCAIS.md).
+- Sem teste físico de notificações, capturas, consumo de RAM, rapidez ou energia no Redmi; não foram alterados o modelo selecionado nem a temperatura padrão com base em ganhos não demonstrados.
+
+## Versão 0.2.2 — relógio no chat e capturas de ecrã (anterior)
 
 - Commit compilado: `22ee56ec525a73b83f19bbf39988176cd88992e3`.
 - [Execução 41224681530](https://github.com/efog82/Atlas/actions/runs/41224681530): **success**.

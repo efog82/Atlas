@@ -16,9 +16,25 @@ Os relatos mostravam duas falhas: pedidos como «criar um lembrete às 21h para 
 
 `LocalRequestRegressionTest` cobre os pedidos relatados, esclarecimentos, separação diário/agenda, lembretes no calendário e identificação de respostas vagas. A suite Android tem testes de persistência e confirmação; compilar não equivale a executar num aparelho.
 
-A tarefa `real-model` do GitHub Actions compila a mesma revisão llama.cpp b5046 para CPU Linux, descarrega Qwen2.5-0.5B-Instruct Q4_K_M do repositório oficial, fixa a revisão resolvida, regista SHA-256 e executa perguntas reais em português. O artefacto `qwen-real-model-smoke` contém respostas integrais e identidade do modelo. A presença de conceitos esperados é uma verificação limitada; não certifica precisão geral. Os pesos descarregados não são publicados no artefacto. O teste de CI não usa documentos pessoais e não acrescenta rede à aplicação Android.
+A tarefa `real-model` do GitHub Actions compila a mesma revisão llama.cpp b5046 para CPU Linux e descarrega Qwen2.5-0.5B-Instruct Q4_K_M e, para comparação, Qwen2.5-1.5B-Instruct Q4_K_M dos repositórios oficiais. Fixa cada revisão resolvida, verifica o SHA-256 contra os metadados LFS oficiais e executa perguntas reais em português com prompts e temperaturas diferentes. Não instala nem seleciona outro modelo automaticamente na aplicação. O artefacto `qwen-real-model-smoke` contém respostas integrais e identidade do modelo. A presença de conceitos esperados é uma verificação limitada; não certifica precisão geral. O teste de conhecimento do 0.5B mantém estado de falha se as respostas não cumprirem os critérios, mesmo que o APK compile ou uma alternativa tenha sucesso. Não se deve interpretar a compilação como aprovação da qualidade factual do modelo. Os pesos descarregados não são publicados no artefacto. O teste de CI não usa documentos pessoais e não acrescenta rede à aplicação Android.
 
 Não há teste físico do Redmi nesta sessão, nem medidas de rapidez, RAM ou bateria. A confirmação, notificação real e captura de ecrã ainda precisam de ensaio no dispositivo.
+
+## Resultado real de 31-10-2026
+
+[Execução 41232075937](https://github.com/efog82/Atlas/actions/runs/41232075937): o job `build` passou; `real-model` falhou o critério do modelo leve. O estado global de falha não é escondido. [Respostas e identidades dos modelos](https://github.com/efog82/Atlas/actions/runs/41232075937/artifacts/13053699828).
+
+| Modelo GGUF Q4_K_M | Ensaios CPU Linux | Presença de conceitos exigidos | Revisão humana |
+| --- | --- | --- | --- |
+| Qwen2.5-0.5B-Instruct | 2 prompts × 3 temperaturas × 2 perguntas = 12 | 0/12 | Respostas incorretas ou insuficientes; temperaturas 0, 0.25 e 0.65 não resolveram. |
+| Qwen2.5-1.5B-Instruct | Prompt da app × 3 temperaturas × 2 perguntas = 6 | 6/6 | Mais pertinente, mas ainda inventou datas e etapas da fotossíntese; não aprovado como solução factual. |
+
+O campo `passed` no JSON significa apenas que a execução terminou e encontrou conceitos; **não significa resposta correta**. A revisão das respostas 1.5B encontrou datas como 1840/1804 para a fundação do espiritismo e etapas inventadas da fotossíntese. A explicação curta de fotossíntese com temperatura 0 foi mais pertinente, mas não permite generalizar qualidade. Não foi selecionado um novo modelo nem alterada a temperatura padrão sem evidência de melhoria suficiente.
+
+- 0.5B: revisão `9217f5db79a29953eb74d5343926648285ec7e67`, ficheiro de 491 400 032 bytes, SHA-256 `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`.
+- 1.5B: revisão `91cad51170dc346986eccefdc2dd33a9da36ead9`, ficheiro de 1 117 320 736 bytes, SHA-256 `6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e`.
+
+Ambos os ficheiros corresponderam ao SHA-256 LFS oficial. Estes tamanhos são dos pesos em disco, **não RAM medida no Redmi**. A indicação anterior de 0.5B como modelo recomendado dizia respeito ao tamanho; estes ensaios mostram que não é uma recomendação de fiabilidade factual. As operações locais corrigidas não dependem de respostas factuais desse modelo. A qualidade geral da conversa continua uma limitação conhecida nesta configuração.
 
 ## Aceitação no Redmi
 
