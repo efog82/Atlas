@@ -62,4 +62,31 @@ class DatabaseAgentTest {
         db.dao().save(Record(kind = Kind.NOTE, title = "1000 real"))
         assertEquals(1, db.dao().search(searchPattern("100%"), listOf(Kind.NOTE)).size)
     }
+    @Test fun noteConfirmationDoesNotCreateTaskOrEvent() = runBlocking {
+        val repository = AtlasRepository(db, ReminderScheduler(app, db.dao()))
+        val tools = AgentTools(repository)
+        val proposal = ToolProtocol.note("Anota que preciso de comprar pão")!!
+        assertTrue(db.dao().records().isEmpty())
+        tools.confirm(proposal)
+        assertEquals(1, db.dao().byKind(Kind.NOTE).size)
+        assertTrue(db.dao().byKind(Kind.TASK).isEmpty())
+        assertTrue(db.dao().byKind(Kind.EVENT).isEmpty())
+    }
+    @Test fun cancelledRequestStaysCancelledAfterDatabaseReopen() = runBlocking {
+        val conversation = Conversation()
+        db.dao().saveConversation(conversation)
+        val request = Message(conversationId = conversation.id, role = "user", content = "Anota comprar pão")
+        db.dao().saveMessage(request)
+        val receipt = ActionReceipt("cancelled", request.id, Kind.NOTE, "Comprar pão")
+        db.dao().saveMessage(Message(conversationId = conversation.id, role = "system", content = receipt.encode()))
+        val question = Message(conversationId = conversation.id, role = "user", content = "Como te chamas?")
+        db.dao().saveMessage(question)
+        db.close(); open()
+        val context = ConversationContext.turns(db.dao().messages(conversation.id), question.id)
+        assertTrue(context.any { it.content.contains("Pedido cancelado") })
+        assertFalse(context.any { it.content.contains("Anota comprar pão") })
+        assertTrue(AgentPolicy.allowedTools(question.content).isEmpty())
+        assertTrue(db.dao().records().isEmpty())
+    }
+
 }

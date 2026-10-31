@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pt.atlas.personal.data.Conversation
 import pt.atlas.personal.agent.ToolProtocol
+import pt.atlas.personal.agent.ActionReceipt
+import pt.atlas.personal.agent.ConversationContext
 import org.json.JSONObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -31,6 +33,7 @@ private fun toolLabel(name: String): String = when (name) {
 }
 
 private fun localResult(content: String): String {
+    ActionReceipt.parse(content)?.let { return it.display() }
     if (!content.startsWith("Dados locais consultados (")) return content
     return runCatching {
         val tool = content.substringAfter('(').substringBefore(')')
@@ -65,7 +68,8 @@ private fun localResult(content: String): String {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(vm: AtlasViewModel) {
-    val messages by vm.messages.collectAsStateWithLifecycle()
+    val storedMessages by vm.messages.collectAsStateWithLifecycle()
+    val messages = remember(storedMessages) { ConversationContext.visibleMessages(storedMessages) }
     val chat by vm.chat.collectAsStateWithLifecycle()
     val engine by vm.engine.collectAsStateWithLifecycle()
     val conversations by vm.conversations.collectAsStateWithLifecycle()

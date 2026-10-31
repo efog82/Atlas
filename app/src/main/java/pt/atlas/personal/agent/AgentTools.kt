@@ -40,7 +40,7 @@ class AgentTools(private val repository: AtlasRepository) {
     // Only called from the explicit confirmation button; validates the proposal a second time.
     suspend fun confirm(proposal: Proposal) {
         require(proposal.tool in ToolProtocol.writes)
-        val expected = when (proposal.tool) { "tasks.create" -> Kind.TASK; "events.create" -> Kind.EVENT; else -> Kind.MEMORY }
+        val expected = ToolProtocol.kindFor(proposal.tool)
         require(proposal.record.kind == expected)
         RecordRules.validate(proposal.record)
         proposal.record.dueAt?.let { require(it > System.currentTimeMillis()) { "A data já passou. Pede uma nova proposta." } }
