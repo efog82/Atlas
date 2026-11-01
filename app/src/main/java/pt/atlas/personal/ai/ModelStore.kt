@@ -59,7 +59,7 @@ class ModelStore(private val context: Context) {
     }
     companion object {
         const val TASK_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT"
-        const val TASK_DOWNLOAD = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true"
+        const val TASK_DOWNLOAD = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/d448835d84411a08f577e25f3afebe528402d73b/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true"
         const val LIGHT_MODEL = "Qwen2.5-0.5B-Instruct • Q4_K_M"
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
         const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"

@@ -89,7 +89,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { Card { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("1 · Escolher motor e modelo", style = MaterialTheme.typography.titleMedium)
                         Text("MediaPipe CPU · Gemma 3 1B .task", style = MaterialTheme.typography.titleSmall)
-                        Text("Descarga de cerca de 555 MB. O catálogo oficial indica pico estimado de 2 GB; não é uma medição no teu Redmi. Confirma os termos Gemma. Pode ser necessário iniciar sessão no Hugging Face. GPU desativada. Define orçamento de pelo menos 2048 MB em Definições.", style = MaterialTheme.typography.bodySmall)
+                        Text("Descarga de cerca de 555 MB. O catálogo oficial indica pico estimado de 2 GB; não é uma medição no teu Redmi. Confirma os termos Gemma. O fornecedor exige início de sessão no Hugging Face e aceitação dos termos. GPU desativada. Define orçamento de pelo menos 2048 MB em Definições.", style = MaterialTheme.typography.bodySmall)
                         TextButton(onClick = { open(ModelStore.TASK_PAGE) }) { Text("Modelo .task e licença") }
                         TextButton(onClick = { open(ModelStore.TASK_DOWNLOAD) }) { Text("Descarregar diretamente .task") }
                         Text("Importa o .task original Gemma3 1B: o motor é escolhido pelo formato. Não renomeies GGUF nem .litertlm para .task. No MediaPipe, o contexto máximo é 2048 e o limite de resposta é a capacidade restante; os ajustes de threads e KV cache pertencem ao llama.cpp.", style = MaterialTheme.typography.bodySmall)
@@ -109,7 +109,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         Text("3 · Ativar modo de avião e conversar", style = MaterialTheme.typography.titleMedium)
                         Text("A inferência é local. A consulta opcional à Wikipédia envia apenas um tema público; os teus registos pessoais não são incluídos. Sem Internet, o Atlas usa as fontes guardadas.")
                     } } }
-                    if (models.isEmpty()) item { EmptyCard("Nenhum modelo instalado", "Importa um GGUF e toca em Carregar. Não são usadas respostas simuladas.") }
+                    if (models.isEmpty()) item { EmptyCard("Nenhum modelo instalado", "Importa um GGUF ou o .task indicado e toca em Carregar. Não são usadas respostas simuladas.") }
                     items(models, key = { it.file.name }) { model -> OutlinedCard {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(model.file.name, style = MaterialTheme.typography.titleSmall)
@@ -125,7 +125,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                 }
                 3 -> {
                     item { SectionTitle("Cópias de segurança", "Encriptação antes de sair da aplicação.") }
-                    item { Text("Incluem agenda, tarefas, diário, memórias, hábitos, texto importado e conversas. Não incluem modelos GGUF nem definições de bloqueio. Guarda a palavra-passe num local seguro.") }
+                    item { Text("Incluem agenda, tarefas, diário, memórias, hábitos, texto importado e conversas. Não incluem modelos de IA nem definições de bloqueio. Guarda a palavra-passe num local seguro.") }
                     item { Button(onClick = { exportBackup.launch("atlas-${LocalDate.now()}.atlas") }, enabled = operation == null && !chat.generating) { Text("Exportar cópia encriptada") } }
                     item { OutlinedButton(onClick = { importBackup.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar e substituir dados…") } }
                     item { Text("AES-256-GCM · PBKDF2-HMAC-SHA256 · 210 000 iterações. Uma palavra-passe errada ou conteúdo alterado impede a restauração. O seletor Android pode incluir destinos na nuvem: só o ficheiro já encriptado é escrito no destino.", style = MaterialTheme.typography.bodySmall) }

@@ -36,6 +36,8 @@ jobs:
         run: bash scripts/setup-native.sh
       - name: Unit tests, lint and debug APK
         run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Summarize actual tests and APK identity
+        run: python3 scripts/summarize-tests.py
       - name: Verify optimized inference kernels
         run: python3 scripts/verify-native-optimization.py
       - name: Static project checks

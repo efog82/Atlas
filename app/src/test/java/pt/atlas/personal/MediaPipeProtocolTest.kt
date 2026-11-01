@@ -25,7 +25,12 @@ class MediaPipeProtocolTest {
             file.writeBytes(ByteArray(2048))
             assertThrows(IllegalArgumentException::class.java) { TaskBundle.validate(file) }
             fun zip(names: List<String>) { ZipOutputStream(file.outputStream()).use { zip ->
-                names.forEach { zip.putNextEntry(ZipEntry(it)); zip.write(ByteArray(2048) { (it % 251).toByte() }); zip.closeEntry() }
+                names.forEach { name ->
+                    val bytes = ByteArray(2048) { (it % 251).toByte() }
+                    val entry = ZipEntry(name).apply { method = ZipEntry.STORED; size = bytes.size.toLong(); compressedSize = size
+                        crc = java.util.zip.CRC32().apply { update(bytes) }.value }
+                    zip.putNextEntry(entry); zip.write(bytes); zip.closeEntry()
+                }
             } }
             zip(listOf("TF_LITE_PREFILL_DECODE", "TOKENIZER_MODEL"))
             assertThrows(IllegalArgumentException::class.java) { TaskBundle.validate(file) }

@@ -10,6 +10,12 @@ object TaskBundle {
         try {
             ZipFile(file).use { zip ->
                 require(zip.size() in 3..20) { "Pacote .task inválido." }
+                val entries = zip.entries().asSequence().toList()
+                require(entries.map { it.name }.distinct().size == entries.size) { "Pacote .task com entradas duplicadas." }
+                require(entries.all { it.method == java.util.zip.ZipEntry.STORED && it.size == it.compressedSize && it.size >= 0 } &&
+                    entries.sumOf { it.size } <= file.length()) { "O pacote oficial .task tem de ser não comprimido, para acesso seguro por mmap." }
+                require((zip.getEntry("METADATA")?.size ?: Long.MAX_VALUE) <= 1024 * 1024 &&
+                    (zip.getEntry("TOKENIZER_MODEL")?.size ?: Long.MAX_VALUE) <= 64L * 1024 * 1024) { "Metadados ou tokenizador .task excessivos." }
                 for (name in listOf("TF_LITE_PREFILL_DECODE", "TOKENIZER_MODEL", "METADATA")) {
                     val entry = zip.getEntry(name)
                     require(entry != null && !entry.isDirectory && entry.size > 0 && entry.size <= 4L * 1024 * 1024 * 1024) {

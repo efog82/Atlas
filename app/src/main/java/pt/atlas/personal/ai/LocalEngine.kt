@@ -42,7 +42,7 @@ class LocalEngine(private val context: android.content.Context? = null) {
             require(file.isFile) { "O modelo já não existe." }
             if (mutable.value.model == file.name) return@withLock
             if (file.extension == "task") {
-                require(file.name.lowercase().contains("gemma3") || file.name.lowercase().contains("gemma-3")) { "Importa o Gemma 3 1B .task indicado, mantendo o nome original. Outros modelos .task ainda não são suportados." }
+                require(Regex("gemma-?3[-_]1b", RegexOption.IGNORE_CASE).containsMatchIn(file.name)) { "Importa o Gemma 3 1B .task indicado, mantendo o nome original. Outros modelos .task ainda não são suportados." }
                 val taskEstimate = maxOf(2L * 1024 * 1048576, file.length() + 512L * 1048576)
                 require(taskEstimate <= preferences.memoryMb * 1048576L) { "Para Gemma 3 .task, define um orçamento de pelo menos ${taskEstimate / 1048576} MB em Definições. É uma estimativa, não um limite real do Android." }
                 require(taskEstimate < availableMemory * 0.8) { "RAM disponível insuficiente para carregar o .task com margem de segurança." }

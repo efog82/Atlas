@@ -36,7 +36,7 @@ class MediaPipeEngine(context: Context, private val file: File, private val capa
         stopRequested.set(false)
         currentCoroutineContext().ensureActive()
         // Only Gemma 3 is supported in this first .task implementation. Do not guess Qwen templates.
-        require(file.name.lowercase().contains("gemma3") || file.name.lowercase().contains("gemma-3")) {
+        require(Regex("gemma-?3[-_]1b", RegexOption.IGNORE_CASE).containsMatchIn(file.name)) {
             "Este motor .task suporta Gemma 3 1B. Usa o ficheiro indicado no ecrã Modelos, mantendo o nome original. Para outros modelos, usa GGUF."
         }
         require(sampling.minP == 0f && sampling.repeatPenalty == 1f) {

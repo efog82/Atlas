@@ -4,13 +4,13 @@ O Atlas mantém llama.cpp para GGUF e acrescenta `com.google.mediapipe:tasks-gen
 
 ## Instalação
 
-1. Em Mais → Modelos, abre a página do modelo e verifica os termos Gemma. O fornecedor pode exigir aceitação e início de sessão no navegador; a app não guarda credenciais.
+1. Em Mais → Modelos, abre a página do modelo e verifica os termos Gemma. O endpoint oficial devolveu HTTP 401 na sonda sem autenticação: é necessário aceitar os termos e iniciar sessão no navegador; a app não guarda credenciais.
 2. Usa **Descarregar diretamente .task**, guarda o ficheiro e importa-o com o nome original.
 3. Em Definições, define orçamento de pelo menos 2048 MB. O catálogo oficial da Gallery estimava pico de 2 GB para este modelo, não uma medição do Redmi. O carregamento exige também margem na RAM disponível. Um orçamento não impõe um limite ao Android.
 4. Carrega o modelo em Modelos. O motor ativo aparece em Definições → Compatibilidade e respostas.
 5. Após a instalação, desliga a Internet e experimenta uma conversa. Os pesos não estão no APK.
 
-[Modelo e licença](https://huggingface.co/litert-community/Gemma3-1B-IT) · [ficheiro .task](https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true).
+[Modelo e licença](https://huggingface.co/litert-community/Gemma3-1B-IT) · [ficheiro .task](https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/d448835d84411a08f577e25f3afebe528402d73b/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true).
 
 ## Execução
 

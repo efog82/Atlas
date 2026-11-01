@@ -32,7 +32,7 @@ try:
                 break
     assert entry is not None, 'Public model repository no longer exposes this .task in inspected revisions'
     url = f'https://huggingface.co/{repo}/resolve/{revision}/{filename}?download=true'
-    report.update(revision=revision, url=url, license=meta.get('cardData', {}).get('license'), bytes=entry.get('size'))
+    report.update(revision=revision, url=url, license=meta.get('cardData', {}).get('license'), bytes=entry.get('size'), expected_sha256=entry.get('lfs', {}).get('sha256'))
     model = out / 'verified-mediapipe.task'
     digest = hashlib.sha256()
     count = 0

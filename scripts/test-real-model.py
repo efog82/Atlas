@@ -65,7 +65,7 @@ for label, repo, quantization, pinned_revision in models:
     elif label == 'gemma3':
         sampling = dict(temperature=0.3, topP=0.9, topK=40, minP=0.0, repeatPenalty=1.0)
     else:
-        sampling = dict(temperature=0.6, topP=0.8, topK=20, minP=0.0, repeatPenalty=1.05)
+        sampling = dict(temperature=0.3, topP=0.8, topK=20, minP=0.0, repeatPenalty=1.05)
     requests = []
     for case, question in [('explanation', 'Explica em três frases, em português, como funciona a fotossíntese.'), ('false-premise', 'Porque é que Lisboa é a capital de Espanha? Responde em português e verifica a premissa da pergunta.')]:
         requests.append(dict(id=case, messages=[dict(role='system', content=system), dict(role='user', content=question)], thinking=False, sampling=sampling, maxTokens=256))
