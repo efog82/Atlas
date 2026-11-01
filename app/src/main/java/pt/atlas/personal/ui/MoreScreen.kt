@@ -87,7 +87,12 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                 2 -> {
                     item { SectionTitle("IA no teu dispositivo", "Instala uma vez. Usa offline.") }
                     item { Card { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("1 · Obter um modelo GGUF", style = MaterialTheme.typography.titleMedium)
+                        Text("1 · Escolher motor e modelo", style = MaterialTheme.typography.titleMedium)
+                        Text("MediaPipe CPU · Gemma 3 1B .task", style = MaterialTheme.typography.titleSmall)
+                        Text("Descarga de cerca de 555 MB. O catálogo oficial indica pico estimado de 2 GB; não é uma medição no teu Redmi. Confirma os termos Gemma. Pode ser necessário iniciar sessão no Hugging Face. GPU desativada. Define orçamento de pelo menos 2048 MB em Definições.", style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { open(ModelStore.TASK_PAGE) }) { Text("Modelo .task e licença") }
+                        TextButton(onClick = { open(ModelStore.TASK_DOWNLOAD) }) { Text("Descarregar diretamente .task") }
+                        Text("Importa o .task original Gemma3 1B: o motor é escolhido pelo formato. Não renomeies GGUF nem .litertlm para .task. No MediaPipe, o contexto máximo é 2048 e o limite de resposta é a capacidade restante; os ajustes de threads e KV cache pertencem ao llama.cpp.", style = MaterialTheme.typography.bodySmall)
                         Text("Gemma 3 1B IT · Q4_K_M", style = MaterialTheme.typography.titleSmall)
                         Text("806 MB de pesos, mais RAM para contexto e cálculo. Deu respostas melhores nos exemplos ensaiados; pode continuar a errar. Consulta os termos Gemma antes de obter o modelo.", style = MaterialTheme.typography.bodySmall)
                         TextButton(onClick = { open(ModelStore.GEMMA_PAGE) }) { Text("Gemma 3 · conversão GGUF ensaiada") }
@@ -99,8 +104,8 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         TextButton(onClick = { open(ModelStore.MODEL_PAGE) }) { Text("Qwen2.5 · página oficial") }
                         Text("Estes tamanhos não são RAM medida no telemóvel. Todos os modelos precisam de memória adicional. Escolhe um GGUF único de conversa/Instruct com chat template; partes separadas devem ser juntas no computador. Podes transferi-lo por USB.", style = MaterialTheme.typography.bodySmall)
                         Text("2 · Importar e carregar", style = MaterialTheme.typography.titleMedium)
-                        Button(onClick = { importModel.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar GGUF") }
-                        Text("Só são aceites GGUF v2/v3. A compatibilidade final é verificada pelo motor llama.cpp ao carregar. O APK não contém pesos.")
+                        Button(onClick = { importModel.launch(arrayOf("*/*")) }, enabled = operation == null && !chat.generating) { Text("Importar GGUF ou .task") }
+                        Text("GGUF v2/v3 usam llama.cpp; o pacote .task Gemma 3 usa MediaPipe CPU. A compatibilidade final é verificada ao carregar. O APK não contém pesos.")
                         Text("3 · Ativar modo de avião e conversar", style = MaterialTheme.typography.titleMedium)
                         Text("A inferência é local. A consulta opcional à Wikipédia envia apenas um tema público; os teus registos pessoais não são incluídos. Sem Internet, o Atlas usa as fontes guardadas.")
                     } } }
@@ -167,7 +172,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                     item { Text("Mantém as notificações autorizadas. Sem permissão de alarmes exatos, o Android gere o horário via WorkManager. Alguns fabricantes também impõem restrições de bateria.", style = MaterialTheme.typography.bodySmall) }
                     item { HorizontalDivider() }
                     item { OutlinedButton(onClick = { wipe = true }, enabled = !chat.generating && operation == null) { Icon(Icons.Default.DeleteForever, null); Text(" Apagar registos e histórico…") } }
-                    item { Text("Atlas Personal 0.4.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT).\nModelos GGUF: Qwen3, Gemma 3 e outros com template compatível. Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
+                    item { Text("Atlas Personal 0.5.0 · Android 13+ · ARM64\nKotlin / Compose / Room / llama.cpp (MIT) / MediaPipe (Apache 2.0).\nModelos GGUF: Qwen3, Gemma 3 e outros com template compatível. Confirma sempre os dados e as sugestões da IA.", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }

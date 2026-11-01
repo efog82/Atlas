@@ -68,6 +68,9 @@ jobs:
         run: |
           cmake -S scripts/model-integration -B scripts/model-integration/build
           cmake --build scripts/model-integration/build --target atlas-model-runner -j 2
+      - name: Verify MediaPipe task download and bundle (not Android inference)
+        continue-on-error: true
+        run: python3 scripts/check-mediapipe-model.py
       - name: Probe optional public encyclopedia endpoint
         continue-on-error: true
         run: python3 scripts/check-knowledge-live.py

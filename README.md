@@ -1,5 +1,8 @@
 # Atlas Personal
 
+**Versão 0.5.0 em validação:** MediaPipe CPU para Gemma 3 1B `.task`, ligação de descarga, importação, streaming e cancelamento; perfil factual por família no llama.cpp. [Utilização e limites](docs/MEDIAPIPE_E_FACTUAL.md).
+**Versão 0.4.0:** procura automática de fontes online quando há Internet, biblioteca offline com excertos citados e consultas pessoais locais. Controlos em **Mais → Conhecimento**. A fonte online inicial é a Wikipédia; não é um serviço de notícias/meteorologia em tempo real nem uma garantia de verdade. [Funcionamento e privacidade](docs/CONHECIMENTO_E_ONLINE.md).
+
 **Versão 0.3.0:** Jinja do GGUF, Qwen3 thinking/non-thinking, amostragem por modelo, modo factual e histórico com papéis normalizados. Integração real Qwen3/Gemma 3/Qwen2.5, sem substituir respostas por factos pré-programados. [Problemas encontrados, alterações e resultados](docs/COMPATIBILIDADE_GGUF.md).
 
 **Versão 0.2.3:** lembretes interpretados localmente com confirmação, agenda/diário com dados reais, contexto de conversa revisto e diagnóstico de capturas. **Qualidade factual do chat ainda limitada** nos ensaios reais Qwen 0.5B/1.5B. [Alterações e resultados completos](docs/OPERACOES_LOCAIS.md).
@@ -24,9 +27,10 @@ Extrai o ZIP e instala `app/build/outputs/apk/debug/app-debug.apk`. Os 15 testes
 - **Agenda:** mês/semana/dia, recorrências diárias/semanais/mensais, edição de séries e CRUD de tarefas. Alarmes locais e recuperação após reinício; fallback WorkManager quando não há permissão para alarmes exatos.
 - **Diário:** registos datados, categorias, etiquetas e pesquisa. Não é convertido automaticamente em memória.
 - **Estudos:** apontamentos por tema, TXT UTF-8/PDF com texto selecionável, pesquisa, referências por página/secção, resumos e revisão pela IA, progresso manual persistente. Citações recuperadas separadas do texto gerado.
+- **Conhecimento:** biblioteca de fontes públicas com URL/revisão/data, cache offline, atualização em rede não tarifada, pesquisa local em documentos e citações separadas da explicação gerada.
 - **Mais:** hábitos, memórias autorizadas editáveis/exportáveis, gestão GGUF, temas, limites de contexto/resposta/RAM, bloqueio biométrico/credenciais e backups AES-256-GCM.
 
-A app não declara permissão `INTERNET`, não usa Firebase e não faz pedidos HTTP. O modelo é obtido pelo navegador ou transferido por USB e importado pelo seletor Android. O seletor pode mostrar fornecedores na nuvem: para instalar inteiramente offline, escolhe ficheiros já existentes no dispositivo.
+A versão 0.4 declara `INTERNET` e `ACCESS_NETWORK_STATE` para a consulta opcional de fontes públicas. O cliente envia apenas termos de uma pergunta pública nova ou IDs de páginas públicas; não recebe histórico, agenda, diário, memórias ou documentos. A inferência GGUF continua inteiramente local. Online pode ser desligado em Conhecimento; sem ligação, só são usadas fontes locais. Não há Firebase, APIs pagas nem servidor próprio obrigatório. O modelo continua a ser importado pelo seletor Android/USB.
 
 ## Compilar
 
@@ -90,13 +94,14 @@ Exportar memórias em JSON é uma ação separada **sem encriptação**, com avi
 
 ```bash
 python3 scripts/check-project.py       # verificações estáticas, sem Android
+python3 scripts/test-search-sql.py     # queries reais em SQLite host, sem Room Android
 ./gradlew testDebugUnitTest            # testes JVM executados com sucesso no GitHub Actions
-./gradlew connectedDebugAndroidTest   # 15 testes instrumentados compilados; execução requer Android ARM64 e GGUF
+./gradlew connectedDebugAndroidTest   # 16 testes instrumentados compilados; execução requer Android ARM64 e GGUF
 ```
 
 O teste de inferência procura um GGUF já importado. Sem ele fica **ignorado**, não aprovado. O teste de abertura pressupõe bloqueio da app desligado. Testes de Room/backup usam bases próprias. [Procedimento e resultados](docs/VALIDACAO.md).
 
-O [workflow Android](.github/workflows/android.yml) instala SDK/NDK, prepara llama.cpp, executa testes JVM/lint, compila e publica APK e relatórios no artefacto `atlas-personal-debug-arm64`. O runner x86 não executa testes instrumentados. A tarefa adicional `model-integration` compila o renderizador/sampler partilhados, descarrega revisões GGUF fixadas, verifica SHA-256, executa gerações reais, valida-as no parser Kotlin da app e audita o idioma. Estes ensaios CPU não substituem testes Android/Redmi. Repositório GitHub: [efog82/Atlas](https://github.com/efog82/Atlas). Consulta [Actions](https://github.com/efog82/Atlas/actions) para acompanhar a compilação. Quando a execução terminar com sucesso, descarrega o artefacto `atlas-personal-debug-arm64`. Uma compilação bem-sucedida não demonstra execução em dispositivo.
+O [workflow Android](.github/workflows/android.yml) instala SDK/NDK, prepara llama.cpp, executa testes JVM/lint, compila e publica APK e relatórios no artefacto `atlas-personal-debug-arm64`. O runner x86 não executa testes instrumentados. A tarefa adicional `model-integration` compila o renderizador/sampler partilhados, descarrega revisões GGUF fixadas, verifica SHA-256, executa gerações reais, valida-as no parser Kotlin da app e audita o idioma. A sonda de Wikipédia regista separadamente uma consulta pública real. Falhas externas não são apresentadas como validação online. Estes ensaios CPU não substituem testes Android/Redmi. Repositório GitHub: [efog82/Atlas](https://github.com/efog82/Atlas). Consulta [Actions](https://github.com/efog82/Atlas/actions) para acompanhar a compilação. Quando a execução terminar com sucesso, descarrega o artefacto `atlas-personal-debug-arm64`. Uma compilação bem-sucedida não demonstra execução em dispositivo.
 
 ## Ficheiros
 

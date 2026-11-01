@@ -25,6 +25,17 @@ data class SamplingConfig(val temperature: Float = 0.7f, val topP: Float = 0.9f,
         require(topK in 1..200 && minP.isFinite() && minP in 0f..1f && repeatPenalty.isFinite() && repeatPenalty in 1f..1.5f)
     }
     companion object {
+        // Conservative starting points, not a claim of improved factual accuracy.
+        // Qwen3 retains the manufacturer's non-greedy guidance, especially in thinking mode.
+        fun automatic(info: ModelInfo, thinking: Boolean, factual: Boolean): SamplingConfig {
+            if (!factual) return recommended(info, thinking)
+            return when (info.family) {
+                ModelFamily.QWEN3 -> if (thinking) recommended(info, true) else SamplingConfig(0.6f, 0.8f, 20)
+                ModelFamily.GEMMA3 -> SamplingConfig(0.3f, 0.9f, 40)
+                ModelFamily.QWEN25 -> SamplingConfig(0.3f, 0.8f, 20, repeatPenalty = 1.05f)
+                ModelFamily.GENERIC -> SamplingConfig(0.3f, 0.9f, 40)
+            }
+        }
         fun recommended(info: ModelInfo, thinking: Boolean): SamplingConfig = when (info.family) {
             ModelFamily.QWEN3 -> if (thinking) SamplingConfig(0.6f, 0.95f, 20) else SamplingConfig(0.7f, 0.8f, 20)
             ModelFamily.GEMMA3 -> SamplingConfig(1f, 0.95f, 64)

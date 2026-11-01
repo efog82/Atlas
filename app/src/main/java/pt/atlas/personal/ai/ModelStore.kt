@@ -12,7 +12,7 @@ data class ModelFile(val file: File, val bytes: Long, val sha256: String?)
 
 class ModelStore(private val context: Context) {
     private val directory = File(context.filesDir, "models").apply { mkdirs() }
-    fun list(): List<ModelFile> = directory.listFiles().orEmpty().filter { it.extension == "gguf" && it.isFile }
+    fun list(): List<ModelFile> = directory.listFiles().orEmpty().filter { it.extension in setOf("gguf", "task") && it.isFile }
         .map { ModelFile(it, it.length(), File(directory, it.name + ".sha256").takeIf(File::isFile)?.readText()) }.sortedBy { it.file.name }
 
     suspend fun import(uri: Uri, onProgress: (Long) -> Unit): File = withContext(Dispatchers.IO) {
@@ -35,15 +35,17 @@ class ModelStore(private val context: Context) {
                     }
                 }
             }
-            validateGguf(output)
-            val digest = hash.digest().joinToString("") { "%02x".format(it) }
-            val existing = list().firstOrNull { it.sha256 == digest }
-            if (existing != null) { output.delete(); return@withContext existing.file }
             val filename = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) cursor.getString(0) else null
             } ?: "modelo.gguf"
+            val extension = filename.substringAfterLast('.', "").lowercase()
+            require(extension in setOf("gguf", "task")) { "Escolhe um ficheiro .gguf ou .task; não renomeies outros formatos." }
+            if (extension == "task") TaskBundle.validate(output) else validateGguf(output)
+            val digest = hash.digest().joinToString("") { "%02x".format(it) }
+            val existing = list().firstOrNull { it.sha256 == digest }
+            if (existing != null) { output.delete(); return@withContext existing.file }
             val base = filename.substringBeforeLast('.').replace(Regex("[^\\p{L}\\p{N}_.-]"), "_").take(90)
-            val final = File(directory, "${base.ifBlank { "modelo" }}-${digest.take(8)}.gguf")
+            val final = File(directory, "${base.ifBlank { "modelo" }}-${digest.take(8)}.$extension")
             check(output.renameTo(final)) { "Não foi possível guardar o modelo." }
             File(directory, final.name + ".sha256").writeText(digest)
             final
@@ -56,6 +58,8 @@ class ModelStore(private val context: Context) {
         File(directory, file.name + ".sha256").delete()
     }
     companion object {
+        const val TASK_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT"
+        const val TASK_DOWNLOAD = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true"
         const val LIGHT_MODEL = "Qwen2.5-0.5B-Instruct • Q4_K_M"
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
         const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"

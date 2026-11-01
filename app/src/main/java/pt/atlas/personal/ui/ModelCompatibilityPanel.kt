@@ -18,19 +18,19 @@ fun ModelCompatibilityPanel(vm: AtlasViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Compatibilidade e respostas", style = MaterialTheme.typography.titleMedium)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text("Modo factual"); Text("Pedir correção de premissas falsas e reconhecimento de incertezas. Não garante exatidão.", style = MaterialTheme.typography.bodySmall) }
+            Column(Modifier.weight(1f)) { Text("Modo factual"); Text("Usa amostragem conservadora por família e pede correção de premissas e reconhecimento de incertezas. Mantém as fontes em Mais → Conhecimento. Não garante exatidão.", style = MaterialTheme.typography.bodySmall) }
             Switch(prefs.factual, { vm.app.settings.update(prefs.copy(factual = it)) }, enabled = enabled)
         }
         if (engine.model != null) {
             val info = engine.info
-            Text("Família: ${info.family} · ${info.architecture}\nTemplate: ${if (info.manualTemplate) "ChatML escolhido manualmente" else "Jinja do GGUF"}", style = MaterialTheme.typography.bodySmall)
+            Text("Motor: ${engine.backend}\nFamília: ${info.family} · ${info.architecture}\nTemplate: ${if (info.manualTemplate) "ChatML escolhido manualmente" else "Jinja do GGUF"}", style = MaterialTheme.typography.bodySmall)
             if (info.thinkingSwitch) Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) { Text("Raciocínio do modelo"); Text("Desligado: non-thinking. Ligado: aguarda a resposta final; pode precisar de 512–1024 tokens ou mais.", style = MaterialTheme.typography.bodySmall) }
                 Switch(prefs.thinking, { vm.app.settings.update(prefs.copy(thinking = it)) }, enabled = enabled)
             } else if (info.reasoning) Text("Este template não permite alternar o raciocínio. O modo é determinado pelo próprio modelo.", style = MaterialTheme.typography.bodySmall)
             val key = requireNotNull(engine.model)
             val custom = prefs.samplingOverrides[key]
-            val config = custom ?: SamplingConfig.recommended(info, info.effectiveThinking(prefs.thinking))
+            val config = custom ?: SamplingConfig.automatic(info, info.effectiveThinking(prefs.thinking), prefs.factual)
             fun save(value: SamplingConfig) { vm.app.settings.update(prefs.copy(samplingOverrides = prefs.samplingOverrides + (key to value))) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Amostragem personalizada deste modelo", Modifier.weight(1f))

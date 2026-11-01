@@ -326,8 +326,8 @@ class AtlasViewModel(application: Application) : AndroidViewModel(application) {
 
     // Explicit, synthetic on-device measurement. No personal data, no background benchmark.
     fun compareProfiles() {
-        if (mutableOperation.value != null || chat.value.generating || engine.value.model == null) {
-            tell("Carrega um modelo e termina a operação atual primeiro."); return
+        if (mutableOperation.value != null || chat.value.generating || engine.value.model == null || engine.value.backend != "llama.cpp CPU") {
+            tell("Carrega um GGUF no llama.cpp e termina a operação atual primeiro."); return
         }
         mutableOperation.value = "A comparar perfis no dispositivo…"
         mutableBenchmark.value = emptyList()

@@ -15,7 +15,7 @@ class AtlasApp : Application() {
     val database by lazy { Room.databaseBuilder(this, AtlasDatabase::class.java, "atlas.db").build() }
     val reminders by lazy { ReminderScheduler(this, database.dao()) }
     val repository by lazy { AtlasRepository(database, reminders) }
-    val engine by lazy { LocalEngine() }
+    val engine by lazy { LocalEngine(this) }
     fun hasInternet(): Boolean {
         val manager = getSystemService(ConnectivityManager::class.java)
         val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false

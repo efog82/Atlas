@@ -21,7 +21,7 @@ class GeneratedModelIntegrationTest {
             for (i in 0 until rows.length()) {
                 val row = rows.getJSONObject(i)
                 val info = ModelInfo(architecture = row.getString("architecture"), name = row.getString("name"), thinkingSwitch = row.getBoolean("thinkingSwitch"))
-                val expected = SamplingConfig.recommended(info, row.getBoolean("thinking"))
+                val expected = SamplingConfig.automatic(info, row.getBoolean("thinking"), factual = true)
                 val sampling = row.getJSONObject("sampling")
                 assertEquals(expected.temperature.toDouble(), sampling.getDouble("temperature"), 0.0001)
                 assertEquals(expected.topP.toDouble(), sampling.getDouble("topP"), 0.0001)

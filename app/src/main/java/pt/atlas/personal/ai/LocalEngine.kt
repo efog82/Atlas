@@ -12,9 +12,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
 
 data class EngineStatus(val model: String? = null, val busy: Boolean = false, val stopping: Boolean = false,
-    val loadMs: Long = 0, val info: ModelInfo = ModelInfo(), val thinking: Boolean = false, val sampling: SamplingConfig = SamplingConfig(), val metrics: InferenceMetrics = InferenceMetrics())
+    val loadMs: Long = 0, val info: ModelInfo = ModelInfo(), val thinking: Boolean = false, val sampling: SamplingConfig = SamplingConfig(), val metrics: InferenceMetrics = InferenceMetrics(), val backend: String = "llama.cpp CPU")
 
-class LocalEngine {
+class LocalEngine(private val context: android.content.Context? = null) {
+    @Volatile private var mediaPipe: MediaPipeEngine? = null
+    private var taskContext = 0
     private val mutex = Mutex()
     private val mutable = MutableStateFlow(EngineStatus())
     val status = mutable.asStateFlow()
@@ -37,9 +39,29 @@ class LocalEngine {
 
     suspend fun load(file: File, preferences: Preferences, availableMemory: Long) = withContext(Dispatchers.IO) {
         mutex.withLock {
-            link()
             require(file.isFile) { "O modelo já não existe." }
             if (mutable.value.model == file.name) return@withLock
+            if (file.extension == "task") {
+                require(file.name.lowercase().contains("gemma3") || file.name.lowercase().contains("gemma-3")) { "Importa o Gemma 3 1B .task indicado, mantendo o nome original. Outros modelos .task ainda não são suportados." }
+                val taskEstimate = maxOf(2L * 1024 * 1048576, file.length() + 512L * 1048576)
+                require(taskEstimate <= preferences.memoryMb * 1048576L) { "Para Gemma 3 .task, define um orçamento de pelo menos ${taskEstimate / 1048576} MB em Definições. É uma estimativa, não um limite real do Android." }
+                require(taskEstimate < availableMemory * 0.8) { "RAM disponível insuficiente para carregar o .task com margem de segurança." }
+                TaskBundle.validate(file)
+                if (linked) nativeUnload()
+                mediaPipe?.close(); mediaPipe = null
+                mutable.value = EngineStatus(busy = true, backend = "MediaPipe CPU")
+                val start = SystemClock.elapsedRealtime()
+                try {
+                    mediaPipe = MediaPipeEngine(requireNotNull(context), file, preferences.contextTokens.coerceAtMost(2048))
+                    taskContext = preferences.contextTokens.coerceAtMost(2048)
+                    modelBytes = file.length()
+                    mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start,
+                        info = ModelInfo("gemma3", file.name, "Gemma 3 / MediaPipe"), backend = "MediaPipe CPU")
+                } catch (e: Throwable) { modelBytes = 0; mutable.value = EngineStatus(); throw IllegalStateException("MediaPipe CPU não conseguiu carregar este modelo. Usa o Gemma 3 1B .task indicado ou um GGUF no llama.cpp. ${e.message}", e) }
+                return@withLock
+            }
+            mediaPipe?.close(); mediaPipe = null
+            link()
             val estimate = file.length() + preferences.contextTokens * 196_608L + 192L * 1048576
             require(estimate <= preferences.memoryMb * 1048576L && estimate < availableMemory * 0.8) {
                 "Verificação preventiva: ${estimate / 1048576} MB. Reduz o contexto ou escolhe um modelo menor."
@@ -52,16 +74,18 @@ class LocalEngine {
                 val info = ModelInfo(meta.getString("architecture"), meta.getString("name"), meta.getString("template"),
                     meta.getBoolean("thinkingSwitch"), meta.getBoolean("reasoning"), meta.getBoolean("manualTemplate"), meta.getBoolean("thinkingForced"))
                 mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start, info = info,
-                    sampling = preferences.samplingOverrides[file.name] ?: SamplingConfig.recommended(info, info.effectiveThinking(preferences.thinking)))
+                    sampling = preferences.samplingOverrides[file.name] ?: SamplingConfig.automatic(info, info.effectiveThinking(preferences.thinking), preferences.factual))
             } catch (e: Throwable) { runCatching { nativeUnload() }; modelBytes = 0; mutable.value = EngineStatus(); throw e }
         }
     }
     suspend fun unload() = withContext(Dispatchers.IO) {
         stop()
-        mutex.withLock { if (linked) nativeUnload(); modelBytes = 0; mutable.value = EngineStatus() }
+        mutex.withLock { mediaPipe?.close(); mediaPipe = null; if (linked) nativeUnload(); modelBytes = 0; mutable.value = EngineStatus() }
     }
-    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (linked) { nativeClearCache(); refresh() } } }
+    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (mediaPipe == null && linked) { nativeClearCache(); refresh() } } }
     fun stop() {
+        mediaPipe?.stop()
+        if (mutable.value.busy && mediaPipe != null) mutable.update { it.copy(stopping = true) }
         activeStop?.let { request ->
             request.set(true)
             if (linked) nativeStop() // Atomic only: never waits for the inference mutex.
@@ -83,12 +107,22 @@ class LocalEngine {
     fun generate(turns: List<Turn>, prefs: Preferences, session: String = "default"): Flow<String> = flow {
         mutex.withLock {
             check(mutable.value.model != null) { "Instala e carrega um modelo em Mais → Modelos de IA." }
+            mediaPipe?.let { pipe ->
+                require(prefs.contextTokens.coerceAtMost(2048) == taskContext) { "Recarrega o modelo MediaPipe para alterar o contexto." }
+                val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.automatic(mutable.value.info, false, prefs.factual)
+                sampling.validate()
+                mutable.update { it.copy(busy = true, sampling = sampling, metrics = InferenceMetrics(), stopping = false) }
+                try {
+                    pipe.generate(turns, prefs, sampling) { metrics -> mutable.update { it.copy(metrics = metrics) } }.collect { emit(it) }
+                } finally { mutable.update { it.copy(busy = false, stopping = false) } }
+                return@withLock
+            }
             val estimate = modelBytes + prefs.contextTokens * 196_608L + 192L * 1048576
             require(estimate <= prefs.memoryMb * 1048576L) { "O contexto excede o orçamento de memória." }
             val config = InferenceConfig.from(prefs)
             val history = ChatHistory.prepare(turns, prefs.factual)
             val info = mutable.value.info
-            val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.recommended(info, info.effectiveThinking(prefs.thinking))
+            val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.automatic(info, info.effectiveThinking(prefs.thinking), prefs.factual)
             sampling.validate()
             val request = AtomicBoolean(false)
             activeStop = request
