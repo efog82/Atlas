@@ -1,6 +1,6 @@
 # Atlas 0.4 — fontes online e biblioteca offline
 
-O Atlas procura informação antes de pedir uma explicação ao modelo. Com ligação validada à Internet e a opção online ligada, pode consultar a Wikipédia em português para perguntas gerais. Sem ligação, utiliza apenas as fontes guardadas no telemóvel. O motor GGUF continua local: não foi substituído por um serviço de IA online.
+O Atlas procura informação antes de pedir uma explicação ao modelo. Com ligação validada à Internet e a opção online ligada, pode consultar a Wikipédia em português para perguntas gerais. Sem ligação, utiliza apenas as fontes guardadas no telemóvel. Os motores GGUF e MediaPipe continuam locais: não foi substituído por um serviço de IA online.
 
 ## O que funciona
 
@@ -13,7 +13,7 @@ O Atlas procura informação antes de pedir uma explicação ao modelo. Com liga
 - Atualização periódica das fontes públicas guardadas, em lotes de até 20 das mais antigas. Usa WorkManager com rede não tarifada (normalmente Wi-Fi) e bateria disponível; o Android pode adiar o trabalho. Há atualização manual.
 - Página **Mais → Conhecimento** para controlar pesquisa online, consultas pessoais automáticas, exigência de fontes, atualização e eliminação de fontes com confirmação.
 - Sem fontes suficientes e com «Exigir fontes» ligado, a aplicação comunica que não encontrou suporte, em vez de solicitar uma resposta factual livre ao modelo. Saudações e conversas de apoio não dependem de existir uma fonte factual.
-- Sem GGUF carregado, os excertos continuam disponíveis; a explicação gerada é opcional e exige um modelo local.
+- Sem modelo carregado, os excertos continuam disponíveis; a explicação gerada é opcional e exige um modelo local.
 
 ## Limites claros
 
@@ -57,3 +57,7 @@ Os textos públicos são atribuídos à Wikipédia e à revisão de origem; apli
 - Integração GGUF real: acrescenta um documento **fictício de ensaio**, não distribuído como conhecimento factual da app. Os modelos recebem uma informação nova e a sua utilização/citação é registada. Isto avalia grounding num caso controlado; não certifica precisão geral.
 
 Os resultados executados, o APK e as limitações do ensaio Android estão em [VALIDACAO.md](VALIDACAO.md). Não foram realizadas medições no Redmi nesta sessão.
+
+## Validação da versão 0.4
+
+O código que introduziu fontes foi compilado e testado na execução [41246590726](https://github.com/efog82/Atlas/actions/runs/41246590726), commit `9348606afa0d58f19670f5909e570aae635954f2`: build e integração aprovados. [APK histórico 0.4](https://github.com/efog82/Atlas/actions/runs/41246590726/artifacts/13059484013) e [ensaios GGUF/fontes](https://github.com/efog82/Atlas/actions/runs/41246590726/artifacts/13058474949). A versão 0.5 mantém estas funcionalidades e acrescenta MediaPipe; consulta [validação atual](VALIDACAO.md). Ensaios em Linux não substituem testes de persistência e inferência no telemóvel.

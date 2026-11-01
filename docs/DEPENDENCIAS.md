@@ -1,5 +1,14 @@
 # Dependências e referências oficiais
 
+## Estado atual (0.5)
+
+- O build usa llama.cpp **b6500**, commit `a7a98e0fffed794396b3fbad4dcdbbc184963645`, e `common_chat_templates_apply`/Jinja; a API e os ensaios reais estão descritos em [compatibilidade](COMPATIBILIDADE_GGUF.md).
+- MediaPipe Android: **tasks-genai 0.10.24**, versão encontrada no catálogo de dependências do exemplo oficial Google Gallery. Foram lidos o código oficial de `LlmInference`, `LlmInferenceSession`, `PromptTemplates` e o criador de bundles. [Referências, correção da versão não publicada e limites](MEDIAPIPE_E_FACTUAL.md).
+- As bibliotecas Android/Room/Compose da tabela foram mantidas; a compilação efetiva, lint e testes JVM passaram. Isso não significa que todas as páginas web citadas na primeira tentativa tenham sido consultadas.
+- O modelo `.task` e os GGUF são pesos separados, sujeitos às respetivas licenças. Não estão incluídos no APK. A execução MediaPipe em Android/Redmi não foi validada no runner Linux.
+
+## Registo da primeira versão (histórico)
+
 As versões estão fixadas para a combinação AGP 8.9.2 / Gradle 8.11.1 / JDK 17. A tentativa de consultar as fontes e obter os componentes falhou por indisponibilidade do proxy. **A verificação documental exigida pelo pedido não ficou concluída.** Os links abaixo são referências para revisão, não evidência de páginas consultadas nesta sessão.
 
 | Componente | Versão | Fonte oficial |

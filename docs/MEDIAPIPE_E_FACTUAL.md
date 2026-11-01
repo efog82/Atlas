@@ -12,6 +12,8 @@ O Atlas mantém llama.cpp para GGUF e acrescenta `com.google.mediapipe:tasks-gen
 
 [Modelo e licença](https://huggingface.co/litert-community/Gemma3-1B-IT) · [ficheiro .task](https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/d448835d84411a08f577e25f3afebe528402d73b/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true).
 
+Metadados públicos consultados: revisão `d448835d84411a08f577e25f3afebe528402d73b`, **554 661 246 bytes**, licença `gemma`. SHA-256 esperado comunicado pelo LFS oficial: `ddfaf1210d8b4d1b812b5fadb6652999e852c8be6dd9abe353b9213a25262c10`. Podes compará-lo com o SHA-256 apresentado após a importação. O download no runner sem autenticação devolveu 401; não foi possível validar os bytes reais deste `.task` nem executar MediaPipe Android nesta sessão.
+
 ## Execução
 
 MediaPipe usa **CPU**, sem ativação automática de GPU. A GPU Mali-G76 não foi testada. O modelo pode não carregar num determinado dispositivo; continua disponível a alternativa llama.cpp/GGUF. Não se afirma que MediaPipe seja mais rápido.
@@ -58,3 +60,17 @@ A primeira tentativa de build identificou que `tasks-genai:0.10.26` não está p
 - [Catálogo oficial Gallery com Gemma3 .task, CPU e estimativa de RAM](https://github.com/google-ai-edge/gallery/blob/8ca33ac79e6c7de2a103e59ef7dc9370e302fc57/model_allowlist.json).
 
 A API atual do upstream sinaliza migração futura para LiteRT-LM. Esta versão fixa a API MediaPipe pedida, sem misturar `.litertlm` com `.task`.
+
+## Resultado da entrega 0.5
+
+[Build validado](https://github.com/efog82/Atlas/actions/runs/41326861929), código `d0669e4e659e9a9cf03358ff9bb31dd92ee5d019`: APK compilado, lint aprovado, 75 testes JVM aprovados e um ignorado condicional. Integração GGUF com 13 gerações e 11 testes aprovada; auditoria de idioma aprovada nas respostas extensas. Os 17 testes Android foram compilados, não executados. [APK e relatórios](https://github.com/efog82/Atlas/actions/runs/41326861929/artifacts/13091612775) · [ensaios reais](https://github.com/efog82/Atlas/actions/runs/41326861929/artifacts/13091488308) · [limites e exemplos incorretos ainda observados](VALIDACAO.md). MediaPipe no telemóvel continua por testar; a descarga do `.task` no runner exigiu autenticação.
+
+## Ficheiros principais
+
+- [MediaPipeEngine.kt](../app/src/main/java/pt/atlas/personal/ai/MediaPipeEngine.kt): carregamento CPU, sessão, streaming, cancelamento e métricas.
+- [TaskBundle.kt](../app/src/main/java/pt/atlas/personal/ai/TaskBundle.kt): validação não extrativa do pacote oficial e formato Gemma.
+- [LocalEngine.kt](../app/src/main/java/pt/atlas/personal/ai/LocalEngine.kt) e [ModelStore.kt](../app/src/main/java/pt/atlas/personal/ai/ModelStore.kt): seleção por formato, gestão e importação.
+- [ModelCompatibility.kt](../app/src/main/java/pt/atlas/personal/ai/ModelCompatibility.kt): política de idioma/citações e seleção de amostragem.
+- [MediaPipeProtocolTest.kt](../app/src/test/java/pt/atlas/personal/MediaPipeProtocolTest.kt) e [MediaPipeDeviceTest.kt](../app/src/androidTest/java/pt/atlas/personal/MediaPipeDeviceTest.kt): testes JVM e percurso nativo condicionado ao dispositivo.
+- [check-mediapipe-model.py](../scripts/check-mediapipe-model.py) e [summarize-tests.py](../scripts/summarize-tests.py): diagnóstico da descarga e identidade do APK/testes efetivamente executados.
+- Gradle, ecrãs Modelos/Compatibilidade/Desempenho, workflow e ensaios GGUF foram atualizados. Room, dados existentes e ferramentas de confirmação mantêm o formato anterior.

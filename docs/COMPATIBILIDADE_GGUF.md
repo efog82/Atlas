@@ -1,5 +1,6 @@
 # Templates, raciocínio e qualidade — Atlas 0.3.0
 
+**Registo histórico da versão 0.3.** Desde 0.4 existe pesquisa online opcional de fontes; desde 0.5 o modo factual também altera a amostragem por família. Consulta [MediaPipe e perfil factual atual](MEDIAPIPE_E_FACTUAL.md) e [conhecimento online/offline](CONHECIMENTO_E_ONLINE.md). As respostas e tabelas abaixo documentam os ensaios anteriores, não parâmetros de 0.5.
 ## Problemas encontrados
 
 1. **Motor anterior ao suporte completo ao Qwen3.** A app estava fixada em llama.cpp b5046. Passa a b6500, commit `a7a98e0fffed794396b3fbad4dcdbbc184963645`, com suporte às arquiteturas Qwen3 e Gemma 3. As dependências Android mantêm as versões anteriores.

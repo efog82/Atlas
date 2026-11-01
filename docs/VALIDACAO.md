@@ -1,6 +1,39 @@
-# Validação — 31 de outubro de 2026
+# Validação — 1 de novembro de 2026
 
-## Versão 0.3.0 — compatibilidade GGUF, thinking e modo factual (mais recente)
+## Versão 0.5.0 — MediaPipe e respostas com fontes (mais recente)
+
+- Commit de código compilado: `d0669e4e659e9a9cf03358ff9bb31dd92ee5d019`.
+- [Execução 41326861929](https://github.com/efog82/Atlas/actions/runs/41326861929): **build success; model-integration success**.
+- `testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`: **BUILD SUCCESSFUL**. Kotlin, Room/KSP, MediaPipe Android 0.10.24 e JNI ARM64 compilados.
+- **75 testes JVM aprovados**, zero falhas/erros, um teste condicional de resultados externos ignorado na tarefa Android (76 no total). Não se conta o ignorado como ensaio de inferência.
+- **17 testes instrumentados compilados; não executados**. Incluem Room/backup/CRUD, abertura, GGUF/cache/interrupção e o novo teste MediaPipe com `.task` real. Este último gera, cancela e volta a gerar, mas exige dispositivo ARM64 e pesos importados.
+- Política nativa de cache, três testes das queries SQLite reais, sete verificações estáticas, lint e confirmação de `-O3` nos kernels aprovados.
+- Integração isolada: **11 testes aprovados** (sete de protocolo, três de bundle/template/amostragem MediaPipe, um com **13 gerações reais**). O teste MediaPipe aqui é de protocolo JVM; não executa o motor Android.
+- GGUFs/revisões/SHA-256 idênticos aos ensaios históricos: Qwen3 0.6B Q8_0 (cinco gerações, incluindo thinking), Gemma 3 1B IT Q4_K_M (quatro), Qwen2.5 0.5B Q4_K_M (quatro). CPU Linux x86, sem acesso a registos pessoais. Verificados templates, BOS, sampler, UTF-8 fragmentado e apresentação da resposta final.
+- Auditoria de idioma aprovada nas 11 respostas extensas; duas respostas curtas/número ficaram explicitamente não verificadas quanto ao idioma. Não se infere verdade a partir do idioma.
+- Os três modelos usaram o nome Talven no documento **fictício de teste** fornecido. Gemma/Qwen3 citaram `[F1]`; Qwen2.5 respondeu sem referência, caso que o aviso de citações da app sinaliza. Não se afirma que todos os modelos respeitam sempre as fontes.
+- **Limitação factual observada:** Qwen3 continuou a chamar «Lisbon» à capital de Espanha e a incluir animais na explicação de fotossíntese; Qwen2.5 aceitou Lisboa como capital de Espanha e gerou uma explicação incorreta de fotossíntese. Gemma corrigiu a premissa indicando Madrid. Estes resultados mostram por que o modo factual deve usar fontes e não certificam exatidão geral.
+- A tentativa anterior com temperatura 0,3 em Gemma/Qwen2.5 não melhorou os exemplos: Gemma acrescentou citações inventadas em inglês e Qwen2.5 não usou o facto fornecido. A auditoria detetou a falha em [41326442532](https://github.com/efog82/Atlas/actions/runs/41326442532); conservou-se a amostragem do fabricante nesses dois casos e clarificou-se a instrução de citações/idioma. A auditoria mantém-se ativa, sem filtros que reescrevam respostas.
+- Consulta pública real à API Wikipédia: **success=true**, excertos/revisões de fotossíntese guardados no relatório. Não é validação de toda a pesquisa Android, nem de notícias/meteorologia.
+- `.task`: metadados oficiais disponíveis, revisão `d448835d84411a08f577e25f3afebe528402d73b`, 554 661 246 bytes. **Descarga sem autenticação bloqueada por HTTP 401**. O SHA-256 LFS esperado é registado, mas os bytes do `.task` não foram obtidos/verificados e não houve inferência MediaPipe Android. A sonda é diagnóstica, com `continue-on-error`; a conclusão global do workflow não significa que o download foi aprovado.
+- [APK e relatórios](https://github.com/efog82/Atlas/actions/runs/41326861929/artifacts/13091612775): APK ARM64 debug de 95910813 bytes; SHA-256 do APK `9cc75aaf89c5ef2f5efc316b36078b1ef48ef1ac6b696885ad2138611e76ae2e`.
+- SHA-256 do ZIP comunicado pelo GitHub: `sha256:89509406406eca6d4dd4f3b97d960a043751d0fcac2a998fb42a19e645fba185`; ZIP de 34378920 bytes.
+- [Prompts, respostas reais, metadados, auditoria e relatórios](https://github.com/efog82/Atlas/actions/runs/41326861929/artifacts/13091488308).
+- **Não verificado no Redmi Note 10S:** instalação/abertura desta versão, execução MediaPipe, compatibilidade CPU do `.task` no firmware, latência de cancelamento no prefill/geração, velocidade, RAM, energia, persistência e notificações. A GPU Mali continua desativada. Os dados de RAM são estimativas; não há resultados de hardware inventados.
+
+[Como instalar e limites](MEDIAPIPE_E_FACTUAL.md). Os documentos modificados depois deste build apenas registam estes resultados; não alteram o código do APK.
+
+## Versão 0.4 — fontes online e biblioteca offline
+
+- Commit `9348606afa0d58f19670f5909e570aae635954f2`; [execução 41246590726](https://github.com/efog82/Atlas/actions/runs/41246590726), build e integração aprovados.
+- Biblioteca pública em Room, fontes/revisões/excertos offline, consultas pessoais locais, atualização pública por IDs e fontes exigidas opcionais foram preservadas na 0.5.
+- [APK histórico](https://github.com/efog82/Atlas/actions/runs/41246590726/artifacts/13059484013) · [integração histórica](https://github.com/efog82/Atlas/actions/runs/41246590726/artifacts/13058474949).
+
+## Registos históricos
+
+Os blocos seguintes descrevem versões anteriores. Referências antigas a ausência de Internet, dependências, contagens e falhas de bootstrap pertencem às respetivas tentativas, não ao estado 0.5 acima.
+
+## Versão 0.3.0 — compatibilidade GGUF, thinking e modo factual (histórico)
 
 - Commit compilado: `7231ca9460d12e0de6637a036492c2db6079494d`.
 - [Execução 41237557207](https://github.com/efog82/Atlas/actions/runs/41237557207): **build success; model-integration success**.
