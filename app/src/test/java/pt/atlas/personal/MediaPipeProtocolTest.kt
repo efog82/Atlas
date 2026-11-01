@@ -47,7 +47,7 @@ class MediaPipeProtocolTest {
         val qwen = ModelInfo("qwen3")
         assertEquals(SamplingConfig.recommended(qwen, true), SamplingConfig.automatic(qwen, true, true))
         assertTrue(SamplingConfig.automatic(qwen, false, true).temperature > 0f)
-        assertEquals(0.3f, SamplingConfig.automatic(ModelInfo("gemma3"), false, true).temperature)
-        assertEquals(0.3f, SamplingConfig.automatic(ModelInfo("qwen2", "Qwen2.5"), false, true).temperature)
+        assertEquals(SamplingConfig.recommended(ModelInfo("gemma3"), false), SamplingConfig.automatic(ModelInfo("gemma3"), false, true))
+        assertEquals(SamplingConfig.recommended(ModelInfo("qwen2", "Qwen2.5"), false), SamplingConfig.automatic(ModelInfo("qwen2", "Qwen2.5"), false, true))
     }
 }

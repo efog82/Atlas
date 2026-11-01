@@ -25,14 +25,16 @@ data class SamplingConfig(val temperature: Float = 0.7f, val topP: Float = 0.9f,
         require(topK in 1..200 && minP.isFinite() && minP in 0f..1f && repeatPenalty.isFinite() && repeatPenalty in 1f..1.5f)
     }
     companion object {
-        // Conservative starting points, not a claim of improved factual accuracy.
+        // Starting points, not a claim of improved factual accuracy.
+        // Real integration at temperature .3 produced invented English quotes for Gemma
+        // and poorer source use for Qwen2.5. Retain their manufacturer sampling.
         // Qwen3 retains the manufacturer's non-greedy guidance, especially in thinking mode.
         fun automatic(info: ModelInfo, thinking: Boolean, factual: Boolean): SamplingConfig {
             if (!factual) return recommended(info, thinking)
             return when (info.family) {
                 ModelFamily.QWEN3 -> if (thinking) recommended(info, true) else SamplingConfig(0.6f, 0.8f, 20)
-                ModelFamily.GEMMA3 -> SamplingConfig(0.3f, 0.9f, 40)
-                ModelFamily.QWEN25 -> SamplingConfig(0.3f, 0.8f, 20, repeatPenalty = 1.05f)
+                ModelFamily.GEMMA3 -> recommended(info, false)
+                ModelFamily.QWEN25 -> recommended(info, false)
                 ModelFamily.GENERIC -> SamplingConfig(0.3f, 0.9f, 40)
             }
         }
@@ -46,6 +48,6 @@ data class SamplingConfig(val temperature: Float = 0.7f, val topP: Float = 0.9f,
 }
 
 object ModelInstructions {
-    const val language = "Responde em português, salvo se o utilizador pedir outro idioma. Mantém as citações no idioma original e identifica-as como citações."
+    const val language = "Responde em português, salvo se o utilizador pedir outro idioma. Não acrescentes traduções nem excertos noutras línguas por iniciativa própria. Só faz citações literais de texto efetivamente fornecido nas fontes ou pelo utilizador; nesse caso preserva o idioma da citação e identifica-a."
     const val factual = "Antes de responder, verifica as premissas da pergunta. Se uma premissa for falsa, corrige-a em vez de a aceitar. Distingue factos, hipóteses e opiniões. Se não souberes ou não puderes confirmar um detalhe, admite a incerteza. Não inventes datas, nomes, números, fontes ou citações. Não afirmes ter consultado a Internet. Prefere uma resposta curta e rigorosa a detalhes especulativos."
 }

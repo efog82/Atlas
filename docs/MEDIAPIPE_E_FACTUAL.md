@@ -24,15 +24,17 @@ A resposta é progressiva. Interromper chama `cancelGenerateResponseAsync`; o c�
 
 ## Factualidade
 
-Modo factual mantém instruções para verificar premissas e admitir incertezas, e acrescenta parâmetros conservadores por família:
+Modo factual mantém instruções para verificar premissas e admitir incertezas, e usa parâmetros por família:
 
 | Família | Temperatura | Top-p | Top-k |
 |---|---:|---:|---:|
 | Qwen3 non-thinking | 0,6 | 0,8 | 20 |
 | Qwen3 thinking | 0,6 | 0,95 | 20 |
-| Gemma 3 | 0,3 | 0,9 | 40 |
-| Qwen2.5 | 0,3 | 0,8 | 20 |
+| Gemma 3 | 1,0 | 0,95 | 64 |
+| Qwen2.5 | 0,7 | 0,8 | 20 |
 | Outros GGUF | 0,3 | 0,9 | 40 |
+
+Foi ensaiada temperatura 0,3 em Gemma 3 e Qwen2.5 na execução [41326442532](https://github.com/efog82/Atlas/actions/runs/41326442532). Os testes de protocolo passaram, mas a auditoria detetou citações inventadas em inglês no Gemma; Qwen2.5 não utilizou corretamente a fonte fictícia. Não se adotaram esses valores como melhoria: foram repostos os parâmetros do fabricante nesses dois modelos. A instrução de idioma/citações foi clarificada: só citar texto realmente fornecido, não gerar traduções espontâneas. O teste de idioma mantém-se ativo; não há filtro de resposta para ocultar falhas.
 
 Qwen3 não usa temperatura zero. As substituições manuais por modelo continuam a ter prioridade; desativa amostragem personalizada para usar o perfil automático. Desligar o modo factual restaura as recomendações anteriores por família. Estes valores são pontos de partida e **não demonstram aumento de exatidão**.
 

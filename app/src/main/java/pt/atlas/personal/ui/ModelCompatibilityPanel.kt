@@ -18,7 +18,7 @@ fun ModelCompatibilityPanel(vm: AtlasViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Compatibilidade e respostas", style = MaterialTheme.typography.titleMedium)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text("Modo factual"); Text("Usa amostragem conservadora por família e pede correção de premissas e reconhecimento de incertezas. Mantém as fontes em Mais → Conhecimento. Não garante exatidão.", style = MaterialTheme.typography.bodySmall) }
+            Column(Modifier.weight(1f)) { Text("Modo factual"); Text("Usa amostragem por família e modo, conservando os valores do fabricante quando os ensaios não apoiam reduzi-los; pede correção de premissas e reconhecimento de incertezas. Mantém as fontes em Mais → Conhecimento. Não garante exatidão.", style = MaterialTheme.typography.bodySmall) }
             Switch(prefs.factual, { vm.app.settings.update(prefs.copy(factual = it)) }, enabled = enabled)
         }
         if (engine.model != null) {
