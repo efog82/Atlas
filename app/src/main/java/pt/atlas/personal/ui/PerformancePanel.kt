@@ -29,7 +29,7 @@ fun InferenceMetricsView(status: EngineStatus, compact: Boolean = false) {
             if (m.stopMs >= 0) Text("Interrupção concluída em ${number(m.stopMs)} ms", style = MaterialTheme.typography.labelSmall)
             if (!compact) {
                 Text("RAM estimada: ${m.estimatedBytes / 1048576} MB · KV ${m.kvTokens} tokens · contextos criados ${m.contextCreations}")
-                Text("CPU ${m.threads}/${m.batchThreads} threads · lote ${m.batch}/${m.microbatch} · contexto ${m.contextTokens}", style = MaterialTheme.typography.labelSmall)
+                if (status.backend == "llama.cpp CPU") Text("CPU ${m.threads}/${m.batchThreads} threads · lote ${m.batch}/${m.microbatch} · contexto ${m.contextTokens}", style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -43,6 +43,7 @@ fun PerformancePanel(vm: AtlasViewModel) {
     val chat by vm.chat.collectAsStateWithLifecycle()
     val comparison by vm.benchmark.collectAsStateWithLifecycle()
     val idle = !chat.generating && operation == null && !status.busy
+    val llama = status.backend == "llama.cpp CPU"
     var confirmBenchmark by remember { mutableStateOf(false) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { if (it != null) vm.exportBenchmark(it) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -50,26 +51,26 @@ fun PerformancePanel(vm: AtlasViewModel) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             InferenceProfile.entries.forEach { profile ->
                 FilterChip(prefs.profile == profile.name, { vm.app.settings.update(profile.applyTo(prefs)) },
-                    label = { Text(profile.label) }, enabled = idle)
+                    label = { Text(profile.label) }, enabled = idle && llama)
             }
         }
         Text("Perfis iniciais para comparar no teu dispositivo. Rápido não garante maior velocidade; mais threads podem aquecer e competir entre si.", style = MaterialTheme.typography.bodySmall)
         Text("Threads de geração: ${prefs.threads}")
         Slider(prefs.threads.toFloat(), { vm.app.settings.update(prefs.copy(profile = "CUSTOM", threads = it.toInt().coerceIn(1,8))) },
-            valueRange = 1f..8f, steps = 6, enabled = idle)
+            valueRange = 1f..8f, steps = 6, enabled = idle && llama)
         Text("Threads de processamento: ${prefs.batchThreads}")
         Slider(prefs.batchThreads.toFloat(), { vm.app.settings.update(prefs.copy(profile = "CUSTOM", batchThreads = it.toInt().coerceIn(1,8))) },
-            valueRange = 1f..8f, steps = 6, enabled = idle)
+            valueRange = 1f..8f, steps = 6, enabled = idle && llama)
         Text("Lote lógico: ${prefs.batch}")
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             listOf(32,64,128,256,512).forEach { size -> FilterChip(prefs.batch == size,
                 { vm.app.settings.update(prefs.copy(profile = "CUSTOM", batch = size, microbatch = prefs.microbatch.coerceAtMost(size))) },
-                label = { Text("$size") }, enabled = idle) }
+                label = { Text("$size") }, enabled = idle && llama) }
         }
         Text("Microlote físico: ${prefs.microbatch}")
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             listOf(8,16,32,64,128).filter { it <= prefs.batch }.forEach { size -> FilterChip(prefs.microbatch == size,
-                { vm.app.settings.update(prefs.copy(profile = "CUSTOM", microbatch = size)) }, label = { Text("$size") }, enabled = idle) }
+                { vm.app.settings.update(prefs.copy(profile = "CUSTOM", microbatch = size)) }, label = { Text("$size") }, enabled = idle && llama) }
         }
         Text("Alterar só threads mantém o contexto e a KV cache. Contexto ou lotes diferentes exigem uma nova alocação no próximo pedido. Os valores efetivos são limitados pelos núcleos disponíveis.", style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -78,9 +79,10 @@ fun PerformancePanel(vm: AtlasViewModel) {
         }
         if (status.model != null) Text("Último carregamento: ${number(status.loadMs / 1000.0)} s", style = MaterialTheme.typography.labelSmall)
         InferenceMetricsView(status)
-        Text("RAM é uma estimativa: tensores do modelo + KV FP16 calculada a partir do GGUF + margem de 192 MB. Não é RSS/PSS nem mede energia ou a RAM total da app.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = vm::clearInferenceCache, enabled = idle && status.model != null) { Text("Limpar KV cache (manter histórico)") }
-        OutlinedButton(onClick = { confirmBenchmark = true }, enabled = idle && status.model != null) { Text("Comparar perfis neste dispositivo") }
+        if (!llama) Text("MediaPipe CPU: os controlos de threads, lotes e KV cache abaixo pertencem ao llama.cpp. O modelo mantém-se carregado, mas cada pedido tem uma sessão isolada. Velocidade final baseada na retokenização da resposta. RAM estimada com base no catálogo do modelo, não medida no aparelho.", style = MaterialTheme.typography.bodySmall)
+        if (llama) Text("RAM é uma estimativa: tensores do modelo + KV FP16 calculada a partir do GGUF + margem de 192 MB. Não é RSS/PSS nem mede energia ou a RAM total da app.", style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = vm::clearInferenceCache, enabled = idle && llama && status.model != null) { Text("Limpar KV cache (manter histórico)") }
+        OutlinedButton(onClick = { confirmBenchmark = true }, enabled = idle && llama && status.model != null) { Text("Comparar perfis neste dispositivo") }
         if (operation?.contains("pedido sem cache") == true || operation?.contains("continuação com cache") == true || operation?.contains("comparar perfis") == true) {
             Button(onClick = vm::stop) { Text("Interromper comparação") }
         }
@@ -93,7 +95,7 @@ fun PerformancePanel(vm: AtlasViewModel) {
                 Text("Processamento ${number(m.prefillMs / 1000)} s · KV reutilizada ${m.reused} · estado térmico ${result.thermalStatus}", style = MaterialTheme.typography.labelSmall)
             } }
         }
-        if (comparison.isNotEmpty()) TextButton(onClick = { export.launch("atlas-desempenho.json") }, enabled = idle) { Text("Exportar resultados medidos (JSON)") }
+        if (comparison.isNotEmpty()) TextButton(onClick = { export.launch("atlas-desempenho.json") }, enabled = idle && llama) { Text("Exportar resultados medidos (JSON)") }
         Text("Vulkan/Mali-G76: não validado neste firmware. Este APK mantém GPU desativada e executa por CPU.", style = MaterialTheme.typography.bodySmall)
     }
     if (confirmBenchmark) ConfirmDialog("Comparar os três perfis?", "Executa seis pedidos sintéticos locais: um sem cache e uma continuação por perfil. Usa contexto 1024 e até 64 tokens de saída para todos. Pode demorar, consumir bateria e aquecer. Limpa a KV cache, mantendo conversas e modelo. Não mede energia e a ordem/temperatura podem influenciar os resultados.",

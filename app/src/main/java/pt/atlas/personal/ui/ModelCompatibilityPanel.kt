@@ -23,7 +23,7 @@ fun ModelCompatibilityPanel(vm: AtlasViewModel) {
         }
         if (engine.model != null) {
             val info = engine.info
-            Text("Motor: ${engine.backend}\nFamília: ${info.family} · ${info.architecture}\nTemplate: ${if (info.manualTemplate) "ChatML escolhido manualmente" else "Jinja do GGUF"}", style = MaterialTheme.typography.bodySmall)
+            Text("Motor: ${engine.backend}\nFamília: ${info.family} · ${info.architecture}\nTemplate: ${if (info.manualTemplate) "ChatML escolhido manualmente" else if (engine.backend == "MediaPipe CPU") "Gemma 3 / MediaPipe" else "Jinja do GGUF"}", style = MaterialTheme.typography.bodySmall)
             if (info.thinkingSwitch) Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) { Text("Raciocínio do modelo"); Text("Desligado: non-thinking. Ligado: aguarda a resposta final; pode precisar de 512–1024 tokens ou mais.", style = MaterialTheme.typography.bodySmall) }
                 Switch(prefs.thinking, { vm.app.settings.update(prefs.copy(thinking = it)) }, enabled = enabled)

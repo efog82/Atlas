@@ -1,6 +1,6 @@
 # Atlas 0.5 — MediaPipe e modo factual
 
-O Atlas mantém llama.cpp para GGUF e acrescenta `com.google.mediapipe:tasks-genai:0.10.26` para o **Gemma 3 1B IT .task**. O formato importado escolhe o motor; só um modelo fica carregado. Não se convertem GGUF renomeando ficheiros. O código não contém respostas factuais pré-programadas.
+O Atlas mantém llama.cpp para GGUF e acrescenta `com.google.mediapipe:tasks-genai:0.10.24` para o **Gemma 3 1B IT .task**. O formato importado escolhe o motor; só um modelo fica carregado. Não se convertem GGUF renomeando ficheiros. O código não contém respostas factuais pré-programadas.
 
 ## Instalação
 
@@ -44,12 +44,15 @@ O workflow compila APK e testes Android, executa testes JVM de formatos/template
 
 Sem um dispositivo ARM64 ligado, não se verificam execução, estabilidade, velocidade, RAM, notificações ou interrupção no Redmi. A verificação em dispositivo deve incluir carregar .task, conversar em modo de avião, cancelar no prefill e na geração, repetir pedidos, mudar para GGUF, consultar agenda/diário e confirmar uma tarefa. Os dados continuam locais; alterações continuam a exigir confirmação.
 
+A primeira tentativa de build identificou que `tasks-genai:0.10.26` não está publicada no Maven Android. Foi substituída por `0.10.24`, a versão fixa no exemplo oficial Gallery correspondente ao modelo `.task`.
+
 ## Referências oficiais consultadas
 
-- [API LlmInference 0.10.26](https://github.com/google-ai-edge/mediapipe/blob/v0.10.26/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInference.java).
-- [Sessões, amostragem e cancelamento](https://github.com/google-ai-edge/mediapipe/blob/v0.10.26/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInferenceSession.java).
-- [PromptTemplates](https://github.com/google-ai-edge/mediapipe/blob/v0.10.26/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/PromptTemplates.java).
-- [Formato oficial de bundles .task](https://github.com/google-ai-edge/mediapipe/blob/v0.10.26/mediapipe/tasks/python/genai/bundler/llm_bundler.py).
+- [Versão Android fixada no exemplo oficial](https://github.com/google-ai-edge/gallery/blob/8ca33ac79e6c7de2a103e59ef7dc9370e302fc57/Android/src/gradle/libs.versions.toml).
+- [API LlmInference 0.10.24](https://github.com/google-ai-edge/mediapipe/blob/v0.10.24/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInference.java).
+- [Sessões, amostragem e cancelamento](https://github.com/google-ai-edge/mediapipe/blob/v0.10.24/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/LlmInferenceSession.java).
+- [PromptTemplates](https://github.com/google-ai-edge/mediapipe/blob/v0.10.24/mediapipe/tasks/java/com/google/mediapipe/tasks/genai/llminference/PromptTemplates.java).
+- [Formato oficial de bundles .task](https://github.com/google-ai-edge/mediapipe/blob/v0.10.24/mediapipe/tasks/python/genai/bundler/llm_bundler.py).
 - [Catálogo oficial Gallery com Gemma3 .task, CPU e estimativa de RAM](https://github.com/google-ai-edge/gallery/blob/8ca33ac79e6c7de2a103e59ef7dc9370e302fc57/model_allowlist.json).
 
 A API atual do upstream sinaliza migração futura para LiteRT-LM. Esta versão fixa a API MediaPipe pedida, sem misturar `.litertlm` com `.task`.

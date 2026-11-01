@@ -28,7 +28,7 @@ android {
 }
 
 dependencies {
-    implementation("com.google.mediapipe:tasks-genai:0.10.26")
+    implementation("com.google.mediapipe:tasks-genai:0.10.24")
     val composeBom = platform("androidx.compose:compose-bom:2025.04.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)

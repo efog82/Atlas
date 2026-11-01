@@ -60,12 +60,12 @@ class LocalEngine(private val context: android.content.Context? = null) {
                 } catch (e: Throwable) { modelBytes = 0; mutable.value = EngineStatus(); throw IllegalStateException("MediaPipe CPU não conseguiu carregar este modelo. Usa o Gemma 3 1B .task indicado ou um GGUF no llama.cpp. ${e.message}", e) }
                 return@withLock
             }
-            mediaPipe?.close(); mediaPipe = null
-            link()
             val estimate = file.length() + preferences.contextTokens * 196_608L + 192L * 1048576
             require(estimate <= preferences.memoryMb * 1048576L && estimate < availableMemory * 0.8) {
                 "Verificação preventiva: ${estimate / 1048576} MB. Reduz o contexto ou escolhe um modelo menor."
             }
+            link()
+            mediaPipe?.close(); mediaPipe = null
             val start = SystemClock.elapsedRealtime()
             mutable.value = EngineStatus(busy = true)
             try {
