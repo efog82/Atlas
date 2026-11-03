@@ -58,7 +58,8 @@ class ModelStore(private val context: Context) {
         File(directory, file.name + ".sha256").delete()
     }
     companion object {
-        const val LITERT_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT"
+        const val LITERT_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT/tree/main"
+        const val LITERT_DOWNLOAD = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv4096.litertlm?download=true"
         const val LIGHT_MODEL = "Qwen2.5-0.5B-Instruct • Q4_K_M"
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
         const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"
