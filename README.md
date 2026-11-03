@@ -1,5 +1,10 @@
 # Atlas Personal
 
+**Versão 0.6.0 (em integração):** LiteRT-LM Android para modelos `.litertlm` genuínos, inicialmente CPU, mantendo llama.cpp para GGUF. O antigo backend MediaPipe `.task` deixa de ser suportado na importação. É necessária validação por GitHub Actions e teste ARM64 antes de considerar esta versão estável. [Modelo LiteRT-LM oficial](https://huggingface.co/litert-community/Gemma3-1B-IT/tree/main) — escolher a variante `.litertlm`, nunca renomear `.task`.
+
+## Versões anteriores
+
+
 **Versão 0.5.0:** MediaPipe CPU para Gemma 3 1B `.task`, ligação de descarga, importação, streaming e cancelamento; perfil factual por família no llama.cpp. [Utilização e limites](docs/MEDIAPIPE_E_FACTUAL.md).
 
 **Versão 0.4.0:** procura automática de fontes online quando há Internet, biblioteca offline com excertos citados e consultas pessoais locais. Controlos em **Mais → Conhecimento**. A fonte online inicial é a Wikipédia; não é um serviço de notícias/meteorologia em tempo real nem uma garantia de verdade. [Funcionamento e privacidade](docs/CONHECIMENTO_E_ONLINE.md).
