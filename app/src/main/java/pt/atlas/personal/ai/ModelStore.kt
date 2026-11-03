@@ -63,7 +63,17 @@ class ModelStore(private val context: Context) {
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
         const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"
         const val QWEN3_PAGE = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/tree/23749fefcc72300e3a2ad315e1317431b06b590a"
-        fun validateLiteRtLm(file: File) {\n            require(file.length() > 1024L * 1024) { "Modelo LiteRT-LM incompleto ou demasiado pequeno." }\n            RandomAccessFile(file, "r").use { input ->\n                val header = ByteArray(128)\n                input.readFully(header)\n                require(!header.copyOfRange(0, 4).contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))) { "O conteúdo é GGUF, não LiteRT-LM." }\n                require(!String(header, Charsets.US_ASCII).trimStart().startsWith("<!DOCTYPE", true)) { "Foi descarregada uma página web, não um modelo." }\n            }\n            // The native LiteRT-LM engine performs the definitive model-format validation.\n        }\n        fun validateGguf(file: File) {
+        fun validateLiteRtLm(file: File) {
+            require(file.length() > 1024L * 1024) { "Modelo LiteRT-LM incompleto ou demasiado pequeno." }
+            RandomAccessFile(file, "r").use { input ->
+                val header = ByteArray(128)
+                input.readFully(header)
+                require(!header.copyOfRange(0, 4).contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))) { "O conteúdo é GGUF, não LiteRT-LM." }
+                require(!String(header, Charsets.US_ASCII).trimStart().startsWith("<!DOCTYPE", true)) { "Foi descarregada uma página web, não um modelo." }
+            }
+            // The native LiteRT-LM engine performs the definitive model-format validation.
+        }
+        fun validateGguf(file: File) {
             require(file.length() >= 24) { "Ficheiro GGUF incompleto." }
             RandomAccessFile(file, "r").use { input ->
                 require(input.readInt() == 0x47475546) { "O ficheiro não tem um cabeçalho GGUF." }
