@@ -65,7 +65,16 @@ class LiteRtEngine(context: Context, private val file: File, private val capacit
                 "LiteRT-LM não suporta estes ajustes de min-p e repetição. Desativa a amostragem personalizada."
             }
             val prepared = ChatHistory.prepare(turns, prefs.factual)
-            val system = prepared.firstOrNull { it.role == "system" }?.content.orEmpty()
+            val policy = prepared.firstOrNull { it.role == "system" }?.content.orEmpty()
+            // The model must know it is Atlas; this is not a hardcoded user-facing answer.
+            val system = """
+                Es o Atlas, um assistente pessoal de inteligencia artificial que funciona localmente neste dispositivo.
+                O teu nome e Atlas. Responde em portugues de Portugal.
+                Responde diretamente a pergunta, sem reinterpretar palavras nem inventar significados.
+                Nao confundas o teu nome Atlas com mapas ou mitologia, salvo se a pessoa perguntar por esses temas.
+                Para saudacoes e perguntas simples, usa respostas curtas.
+                $policy
+            """.trimIndent()
             val messages = prepared.drop(1)
             require(messages.isNotEmpty() && messages.last().role == "user") { "Falta a pergunta." }
             // A new conversation for each request: no accidental carry-over across Atlas sessions.
@@ -98,7 +107,7 @@ class LiteRtEngine(context: Context, private val file: File, private val capacit
                 conversation = parent.createConversation(config)
                 active = conversation
                 updateMetrics(metrics.copy(phase = 1))
-                conversation.sendMessageAsync(kept.last().content).collect { chunk ->
+                conversation.sendMessageAsync(kept.last().content, maxOutputToken = prefs.maxTokens.coerceIn(32, (capacity / 2).coerceAtLeast(32))).collect { chunk ->
                     ensureActive()
                     if (stopping.get()) throw CancellationException("Interrompido")
                     val text = chunk.toString()
