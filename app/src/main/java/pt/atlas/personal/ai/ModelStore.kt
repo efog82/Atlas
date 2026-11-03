@@ -12,7 +12,7 @@ data class ModelFile(val file: File, val bytes: Long, val sha256: String?)
 
 class ModelStore(private val context: Context) {
     private val directory = File(context.filesDir, "models").apply { mkdirs() }
-    fun list(): List<ModelFile> = directory.listFiles().orEmpty().filter { it.extension in setOf("gguf", "task") && it.isFile }
+    fun list(): List<ModelFile> = directory.listFiles().orEmpty().filter { it.extension in setOf("gguf", "litertlm") && it.isFile }
         .map { ModelFile(it, it.length(), File(directory, it.name + ".sha256").takeIf(File::isFile)?.readText()) }.sortedBy { it.file.name }
 
     suspend fun import(uri: Uri, onProgress: (Long) -> Unit): File = withContext(Dispatchers.IO) {
@@ -39,8 +39,8 @@ class ModelStore(private val context: Context) {
                 if (cursor.moveToFirst()) cursor.getString(0) else null
             } ?: "modelo.gguf"
             val extension = filename.substringAfterLast('.', "").lowercase()
-            require(extension in setOf("gguf", "task")) { "Escolhe um ficheiro .gguf ou .task; não renomeies outros formatos." }
-            if (extension == "task") TaskBundle.validate(output) else validateGguf(output)
+            require(extension in setOf("gguf", "litertlm")) { "Escolhe um ficheiro .gguf ou .litertlm original. Não alteres extensões." }
+            if (extension == "litertlm") validateLiteRtLm(output) else validateGguf(output)
             val digest = hash.digest().joinToString("") { "%02x".format(it) }
             val existing = list().firstOrNull { it.sha256 == digest }
             if (existing != null) { output.delete(); return@withContext existing.file }
@@ -58,13 +58,12 @@ class ModelStore(private val context: Context) {
         File(directory, file.name + ".sha256").delete()
     }
     companion object {
-        const val TASK_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT"
-        const val TASK_DOWNLOAD = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/d448835d84411a08f577e25f3afebe528402d73b/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true"
+        const val LITERT_PAGE = "https://huggingface.co/litert-community/Gemma3-1B-IT"
         const val LIGHT_MODEL = "Qwen2.5-0.5B-Instruct • Q4_K_M"
         const val MODEL_PAGE = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
         const val GEMMA_PAGE = "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/tree/f9c28bcd85737ffc5aef028638d3341d49869c27"
         const val QWEN3_PAGE = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/tree/23749fefcc72300e3a2ad315e1317431b06b590a"
-        fun validateGguf(file: File) {
+        fun validateLiteRtLm(file: File) {\n            require(file.length() > 1024L * 1024) { "Modelo LiteRT-LM incompleto ou demasiado pequeno." }\n            RandomAccessFile(file, "r").use { input ->\n                val header = ByteArray(128)\n                input.readFully(header)\n                require(!header.copyOfRange(0, 4).contentEquals(byteArrayOf(0x47, 0x47, 0x55, 0x46))) { "O conteúdo é GGUF, não LiteRT-LM." }\n                require(!String(header, Charsets.US_ASCII).trimStart().startsWith("<!DOCTYPE", true)) { "Foi descarregada uma página web, não um modelo." }\n            }\n            // The native LiteRT-LM engine performs the definitive model-format validation.\n        }\n        fun validateGguf(file: File) {
             require(file.length() >= 24) { "Ficheiro GGUF incompleto." }
             RandomAccessFile(file, "r").use { input ->
                 require(input.readInt() == 0x47475546) { "O ficheiro não tem um cabeçalho GGUF." }
