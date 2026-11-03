@@ -91,6 +91,7 @@ fun MoreScreen(vm: AtlasViewModel, records: List<Record>, onLock: (Boolean) -> U
                         Text("LiteRT-LM CPU · modelos .litertlm", style = MaterialTheme.typography.titleSmall)
                         Text("O motor LiteRT-LM substitui MediaPipe. Descarrega um ficheiro .litertlm original e escolhe-o no botão Importar. O modelo funciona offline depois de instalado; a disponibilidade de RAM depende do telemóvel.", style = MaterialTheme.typography.bodySmall)
                         TextButton(onClick = { open(ModelStore.LITERT_PAGE) }) { Text("Modelos LiteRT-LM no Hugging Face") }
+                        TextButton(onClick = { open(ModelStore.LITERT_DOWNLOAD) }) { Text("Descarregar Gemma 3 .litertlm (584 MB)") }
                         Text("Os ficheiros .task e .litertlm não são equivalentes. Não renomeies modelos. Nesta versão LiteRT-LM usa CPU; GGUF continua a utilizar llama.cpp.", style = MaterialTheme.typography.bodySmall)
                         Text("Gemma 3 1B IT · Q4_K_M", style = MaterialTheme.typography.titleSmall)
                         Text("806 MB de pesos, mais RAM para contexto e cálculo. Deu respostas melhores nos exemplos ensaiados; pode continuar a errar. Consulta os termos Gemma antes de obter o modelo.", style = MaterialTheme.typography.bodySmall)
