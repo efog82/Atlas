@@ -15,8 +15,8 @@ data class EngineStatus(val model: String? = null, val busy: Boolean = false, va
     val loadMs: Long = 0, val info: ModelInfo = ModelInfo(), val thinking: Boolean = false, val sampling: SamplingConfig = SamplingConfig(), val metrics: InferenceMetrics = InferenceMetrics(), val backend: String = "llama.cpp CPU")
 
 class LocalEngine(private val context: android.content.Context? = null) {
-    @Volatile private var mediaPipe: MediaPipeEngine? = null
-    private var taskContext = 0
+    @Volatile private var liteRt: LiteRtEngine? = null
+    private var liteRtContext = 0
     private val mutex = Mutex()
     private val mutable = MutableStateFlow(EngineStatus())
     val status = mutable.asStateFlow()
@@ -41,23 +41,34 @@ class LocalEngine(private val context: android.content.Context? = null) {
         mutex.withLock {
             require(file.isFile) { "O modelo já não existe." }
             if (mutable.value.model == file.name) return@withLock
-            if (file.extension == "task") {
-                require(Regex("gemma-?3[-_]1b", RegexOption.IGNORE_CASE).containsMatchIn(file.name)) { "Importa o Gemma 3 1B .task indicado, mantendo o nome original. Outros modelos .task ainda não são suportados." }
-                val taskEstimate = maxOf(2L * 1024 * 1048576, file.length() + 512L * 1048576)
-                require(taskEstimate <= preferences.memoryMb * 1048576L) { "Para Gemma 3 .task, define um orçamento de pelo menos ${taskEstimate / 1048576} MB em Definições. É uma estimativa, não um limite real do Android." }
-                require(taskEstimate < availableMemory * 0.8) { "RAM disponível insuficiente para carregar o .task com margem de segurança." }
-                TaskBundle.validate(file)
+            if (file.extension.equals("litertlm", ignoreCase = true)) {
+                val estimate = maxOf(1024L * 1048576, file.length() + 512L * 1048576)
+                require(estimate <= preferences.memoryMb * 1048576L) {
+                    "Para LiteRT-LM estima-se pelo menos ${estimate / 1048576} MB. Ajusta o orçamento de memória."
+                }
+                require(estimate < availableMemory * 0.8) {
+                    "RAM disponível insuficiente para carregar este LiteRT-LM com margem de segurança."
+                }
+                ModelStore.validateLiteRtLm(file)
                 if (linked) nativeUnload()
-                mediaPipe?.close(); mediaPipe = null
-                mutable.value = EngineStatus(busy = true, backend = "MediaPipe CPU")
+                liteRt?.shutdown(); liteRt = null
+                mutable.value = EngineStatus(busy = true, backend = "LiteRT-LM CPU")
                 val start = SystemClock.elapsedRealtime()
                 try {
-                    mediaPipe = MediaPipeEngine(requireNotNull(context), file, preferences.contextTokens.coerceAtMost(2048))
-                    taskContext = preferences.contextTokens.coerceAtMost(2048)
+                    val next = LiteRtEngine(requireNotNull(context), file, preferences.contextTokens)
+                    next.initialize()
+                    liteRt = next
+                    liteRtContext = preferences.contextTokens
                     modelBytes = file.length()
+                    val info = ModelInfo("litertlm", file.name, "LiteRT-LM")
                     mutable.value = EngineStatus(file.name, loadMs = SystemClock.elapsedRealtime() - start,
-                        info = ModelInfo("gemma3", file.name, "Gemma 3 / MediaPipe"), backend = "MediaPipe CPU")
-                } catch (e: Throwable) { modelBytes = 0; mutable.value = EngineStatus(); throw IllegalStateException("MediaPipe CPU não conseguiu carregar este modelo. Usa o Gemma 3 1B .task indicado ou um GGUF no llama.cpp. ${e.message}", e) }
+                        info = info, sampling = SamplingConfig.automatic(info, false, preferences.factual),
+                        backend = "LiteRT-LM CPU")
+                } catch (e: Throwable) {
+                    modelBytes = 0
+                    mutable.value = EngineStatus()
+                    throw IllegalStateException("LiteRT-LM não conseguiu carregar o modelo. Confirma que é um .litertlm genuíno e compatível. ${e.message}", e)
+                }
                 return@withLock
             }
             val estimate = file.length() + preferences.contextTokens * 196_608L + 192L * 1048576
@@ -65,7 +76,7 @@ class LocalEngine(private val context: android.content.Context? = null) {
                 "Verificação preventiva: ${estimate / 1048576} MB. Reduz o contexto ou escolhe um modelo menor."
             }
             link()
-            mediaPipe?.close(); mediaPipe = null
+            liteRt?.shutdown(); liteRt = null
             val start = SystemClock.elapsedRealtime()
             mutable.value = EngineStatus(busy = true)
             try {
@@ -80,12 +91,12 @@ class LocalEngine(private val context: android.content.Context? = null) {
     }
     suspend fun unload() = withContext(Dispatchers.IO) {
         stop()
-        mutex.withLock { mediaPipe?.close(); mediaPipe = null; if (linked) nativeUnload(); modelBytes = 0; mutable.value = EngineStatus() }
+        mutex.withLock { liteRt?.shutdown(); liteRt = null; if (linked) nativeUnload(); modelBytes = 0; mutable.value = EngineStatus() }
     }
-    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (mediaPipe == null && linked) { nativeClearCache(); refresh() } } }
+    suspend fun clearCache() = withContext(Dispatchers.IO) { mutex.withLock { if (liteRt == null && linked) { nativeClearCache(); refresh() } } }
     fun stop() {
-        mediaPipe?.stop()
-        if (mutable.value.busy && mediaPipe != null) mutable.update { it.copy(stopping = true) }
+        liteRt?.stop()
+        if (mutable.value.busy && liteRt != null) mutable.update { it.copy(stopping = true) }
         activeStop?.let { request ->
             request.set(true)
             if (linked) nativeStop() // Atomic only: never waits for the inference mutex.
@@ -107,13 +118,15 @@ class LocalEngine(private val context: android.content.Context? = null) {
     fun generate(turns: List<Turn>, prefs: Preferences, session: String = "default"): Flow<String> = flow {
         mutex.withLock {
             check(mutable.value.model != null) { "Instala e carrega um modelo em Mais → Modelos de IA." }
-            mediaPipe?.let { pipe ->
-                require(prefs.contextTokens.coerceAtMost(2048) == taskContext) { "Recarrega o modelo MediaPipe para alterar o contexto." }
-                val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.automatic(mutable.value.info, false, prefs.factual)
+            liteRt?.let { runtime ->
+                require(prefs.contextTokens == liteRtContext) { "Recarrega o LiteRT-LM para alterar o contexto." }
+                val info = mutable.value.info
+                val sampling = prefs.samplingOverrides[mutable.value.model] ?: SamplingConfig.automatic(info, false, prefs.factual)
                 sampling.validate()
                 mutable.update { it.copy(busy = true, sampling = sampling, metrics = InferenceMetrics(), stopping = false) }
                 try {
-                    pipe.generate(turns, prefs, sampling) { metrics -> mutable.update { it.copy(metrics = metrics) } }.collect { emit(it) }
+                    runtime.generate(turns, prefs, sampling) { metrics -> mutable.update { it.copy(metrics = metrics) } }
+                        .collect { emit(it) }
                 } finally { mutable.update { it.copy(busy = false, stopping = false) } }
                 return@withLock
             }
