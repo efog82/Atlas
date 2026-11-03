@@ -11,7 +11,6 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import pt.atlas.personal.security.Preferences
@@ -39,6 +38,7 @@ class LiteRtEngine(context: Context, private val file: File, private val capacit
         val instance = Engine(EngineConfig(
             modelPath = file.absolutePath,
             backend = Backend.CPU(),
+            maxNumTokens = capacity,
             cacheDir = cacheDir.absolutePath
         ))
         // Never call close on an engine whose initialize failed.
